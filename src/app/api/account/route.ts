@@ -109,6 +109,21 @@ export const POST = api(async (request) => {
 export const DELETE = api(async (request) => {
   const user = await account(request);
   const input = await body(request);
+  if (user.is_guest) {
+    if (
+      !input ||
+      typeof input !== "object" ||
+      !("confirm" in input) ||
+      input.confirm !== true
+    )
+      throw new ApiError(400, "Confirme a exclusão dos seus dados.");
+    await db().query(
+      "DELETE FROM lumi_accounts WHERE id=$1 AND is_guest=true",
+      [user.id],
+    );
+    return json({ ok: true }, 200, { "Set-Cookie": cookie("", true) });
+  }
+
   if (
     !input ||
     typeof input !== "object" ||

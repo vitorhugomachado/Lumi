@@ -1,12 +1,11 @@
 "use client";
-import { cloud, logoutCloud } from "@/lib/cloud";
+import { cloud } from "@/lib/cloud";
 import { Icon } from "./Icon";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Mascot } from "./Mascot";
-import { ParentGate, useParentAccess } from "@/components/safety/ParentGate";
 import {
   readActivities,
   recordActivity,
@@ -48,20 +47,6 @@ export function Back({ href = "/inicio" }: { href?: string }) {
   );
 }
 export function Experience({ screen }: { screen: string }) {
-  if (
-    [
-      "publico",
-      "objetivos",
-      "familia",
-      "responsaveis",
-      "configuracoes",
-    ].includes(screen)
-  )
-    return (
-      <ParentGate>
-        <Surface screen={screen} />
-      </ParentGate>
-    );
   return <Surface screen={screen} />;
 }
 function Surface({ screen }: { screen: string }) {
@@ -85,7 +70,7 @@ function Surface({ screen }: { screen: string }) {
           Grandes conexões
         </p>
         <Mascot />
-        <Link className="button primary bottom-action" href="/boas-vindas">
+        <Link className="button primary bottom-action" href="/inicio">
           Começar <span>→</span>
         </Link>
       </main>
@@ -105,7 +90,7 @@ function Surface({ screen }: { screen: string }) {
         <div className="page-dots" aria-label="Etapa 1 de 4">
           ● ○ ○ ○
         </div>
-        <Link className="button primary bottom-action" href="/publico">
+        <Link className="button primary bottom-action" href="/inicio">
           Vamos lá!
         </Link>
       </main>
@@ -336,13 +321,11 @@ function Library({ category }: { category: string }) {
           : words;
   if (chosen)
     return (
-      <ParentGate>
-        <Practice
-          item={chosen}
-          category={category}
-          onBack={() => setChosen(null)}
-        />
-      </ParentGate>
+      <Practice
+        item={chosen}
+        category={category}
+        onBack={() => setChosen(null)}
+      />
     );
   return (
     <main className="ref-screen library">
@@ -461,7 +444,6 @@ function Practice({
   const [phase, setPhase] = useState("example");
   const [error, setError] = useState("");
   const [level, setLevel] = useState(0);
-  const [consent, setConsent] = useState(false);
   const [mirror, setMirror] = useState(false);
   const video = useRef<HTMLVideoElement>(null);
   const speech = useSpeech();
@@ -682,20 +664,11 @@ function Practice({
             <button
               className="mic-orb"
               aria-label="Começar minha vez"
-              disabled={!consent}
               onClick={listen}
             >
               <Icon name="mic" size={29} />
             </button>
           </div>
-          <label className="voice-consent">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-            />
-            <span>Sou adulto e vou testar com minha própria voz.</span>
-          </label>
           <label className="voice-consent">
             <input
               type="checkbox"
@@ -1017,7 +990,7 @@ function Progress({ family = false }: { family?: boolean }) {
       </div>
       <p className="fine">
         {cloud.enabled
-          ? "Registros da sua conta."
+          ? "Descobertas salvas para este navegador."
           : "Registros deste aparelho."}{" "}
         Não medimos fala ou desenvolvimento.
       </p>
@@ -1066,7 +1039,6 @@ function Achievements() {
 }
 function Settings({ parents }: { parents: boolean }) {
   const router = useRouter();
-  const access = useParentAccess();
   const [detail, setDetail] = useState("");
   const [message, setMessage] = useState("");
   const [sound, setSound] = useState(() => {
@@ -1173,9 +1145,10 @@ function Settings({ parents }: { parents: boolean }) {
           ) : detail === "Privacidade e segurança" ? (
             <>
               <p>
-                O perfil e a participação ficam neste aparelho. Exercícios usam
-                o microfone sem gravar. Na conversa ao vivo, sua voz é enviada
-                ao Google Gemini com consentimento.
+                O perfil é opcional. No site, perfil e participação ficam salvos
+                no servidor, vinculados a este navegador. Exercícios usam o
+                microfone sem gravar. Na conversa ao vivo, sua voz é enviada ao
+                Google Gemini ao tocar no microfone.
               </p>
               <button
                 className="button secondary"
@@ -1213,7 +1186,7 @@ function Settings({ parents }: { parents: boolean }) {
               {detail === "Idioma"
                 ? "Português (Brasil). Outros idiomas ainda não estão disponíveis."
                 : detail === "Tempo de uso"
-                  ? "Conversas de até 3 minutos ou 10 respostas, com pausa após 1 minuto sem interação. O acesso do responsável dura 5 minutos."
+                  ? "Conversas de até 3 minutos ou 10 respostas, com pausa após 1 minuto sem interação. As pausas são automáticas."
                   : detail === "Configurar rotina"
                     ? "Brinquem por alguns minutos, com pausas. Lembretes automáticos ainda não estão disponíveis."
                     : detail === "Conectar com fonoaudiólogo"
@@ -1222,7 +1195,7 @@ function Settings({ parents }: { parents: boolean }) {
                         ? "Escolha uma categoria no início ou edite os interesses no perfil. O perfil não é enviado ao Gemini."
                         : detail === "Dicas e orientações"
                           ? "Escute com calma, dê tempo para responder e valorize a participação. Não é preciso corrigir nem cobrar acertos."
-                          : "Lumi · Sua amiguinha de luz. Protótipo para testes com adultos, inspirado em pequenas descobertas."}
+                          : "Lumi · Sua amiguinha de luz. Brincadeiras inspiradas em pequenas descobertas."}
             </p>
           )}
         </section>
@@ -1240,15 +1213,13 @@ function Settings({ parents }: { parents: boolean }) {
         className="button primary bottom-action"
         onClick={async () => {
           try {
-            await logoutCloud();
-            access.lock();
-            router.push("/");
+            router.push("/inicio");
           } catch {
             setMessage("Não foi possível sair. Tente novamente.");
           }
         }}
       >
-        Sair
+        Voltar ao início
       </button>
     </main>
   );

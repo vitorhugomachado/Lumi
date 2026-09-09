@@ -38,7 +38,7 @@ export async function hydrateCloud() {
     requestJson("/api/activities"),
   ]);
   if (version !== cloud.version)
-    throw new Error("Sua sessão mudou. Entre novamente.");
+    throw new Error("Sua sessão mudou. Atualize a página para continuar.");
   cloud.profile = profile.profile;
   cloud.activities = activities.activities;
 }

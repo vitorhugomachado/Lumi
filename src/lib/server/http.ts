@@ -65,14 +65,22 @@ export async function body(request: Request): Promise<unknown> {
 }
 export async function account(request: Request) {
   const token = sessionToken(request);
-  if (!token) throw new ApiError(401, "Entre na conta do responsável.");
+  if (!token)
+    throw new ApiError(401, "Preparando seu acesso. Tente novamente.");
   const result = await db().query(
-    "SELECT a.id,a.email FROM lumi_sessions s JOIN lumi_accounts a ON a.id=s.account_id WHERE s.token_hash=$1 AND s.expires_at>now()",
+    "SELECT a.id,a.email,a.is_guest FROM lumi_sessions s JOIN lumi_accounts a ON a.id=s.account_id WHERE s.token_hash=$1 AND s.expires_at>now()",
     [digest(token)],
   );
   if (!result.rows[0])
-    throw new ApiError(401, "Sua sessão terminou. Entre novamente.");
-  return result.rows[0] as { id: string; email: string };
+    throw new ApiError(
+      401,
+      "Sua sessão terminou. Atualize a página para continuar.",
+    );
+  return result.rows[0] as {
+    id: string;
+    email: string | null;
+    is_guest: boolean;
+  };
 }
 export async function limit(key: string, max: number, seconds: number) {
   const result = await db().query(

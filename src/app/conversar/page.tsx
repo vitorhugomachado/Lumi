@@ -1,9 +1,7 @@
 "use client";
-import { ParentGate, useParentAccess } from "@/components/safety/ParentGate";
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
 import { loadProfile } from "@/lib/child/storage";
 import type { VoiceState } from "@/lib/voice/VoiceProvider";
 import { createVoiceProvider } from "@/lib/voice/createVoiceProvider";
@@ -26,11 +24,8 @@ function ConversationPage() {
   );
 }
 function Conversation() {
-  const router = useRouter();
-  const access = useParentAccess();
   const lifecycle = useRef({ generation: 0 });
   const isMock = (process.env.NEXT_PUBLIC_VOICE_PROVIDER ?? "mock") === "mock";
-  const [consent, setConsent] = useState(false);
   const [initial] = useState(() => {
     try {
       return {
@@ -57,7 +52,6 @@ function Conversation() {
   const [heard, setHeard] = useState("");
   const [error, setError] = useState(initial.error);
   useEffect(() => {
-    if (!profile && !initial.error) router.replace("/onboarding");
     if (!provider) return;
     const off = [
       provider.onStateChange(setState),
@@ -66,7 +60,6 @@ function Conversation() {
       ),
       provider.onError((e) => {
         setError(e.message);
-        access.lock(e.message);
       }),
     ];
     const session = lifecycle.current;
@@ -88,10 +81,10 @@ function Conversation() {
       off.forEach((fn) => fn());
       provider.disconnect();
     };
-  }, [profile, provider, initial.error, router, access]);
+  }, [provider]);
   const active = !["idle", "error"].includes(state);
   async function toggle() {
-    if (!provider || !profile || (!isMock && !consent)) return;
+    if (!provider) return;
     if (active) {
       lifecycle.current.generation++;
       provider.stopConversation();
@@ -106,7 +99,14 @@ function Conversation() {
     try {
       await provider.connect();
       if (current === lifecycle.current.generation)
-        provider.startConversation(profile);
+        provider.startConversation(
+          profile ?? {
+            name: "amiguinho",
+            ageMonths: 24,
+            interests: ["Animais"],
+            knownWords: [],
+          },
+        );
     } catch (e) {
       if (current === lifecycle.current.generation) {
         setState("error");
@@ -116,9 +116,11 @@ function Conversation() {
   }
   return (
     <main className="conversation">
-      <Link className="back-round" href="/inicio" aria-label="Voltar ao início">←</Link>
+      <Link className="back-round" href="/inicio" aria-label="Voltar ao início">
+        ←
+      </Link>
       <div className="badge">
-        ✦ {isMock ? "Conversa simulada" : "Conversa por voz · teste com adulto"}
+        ✦ {isMock ? "Conversa simulada" : "Conversa por voz"}
       </div>
       <h1>Oi{profile ? `, ${profile.name}` : ""}!</h1>
       <p className="intro">Vamos conversar?</p>
@@ -127,13 +129,8 @@ function Conversation() {
         {text || "Uma nova descoberta está por aqui."}
       </div>
       <LumiState state={state} />
-      {profile && provider && (
-        <MicrophoneButton
-          active={active}
-          onClick={toggle}
-          mock={isMock}
-          disabled={!isMock && !consent}
-        />
+      {provider && (
+        <MicrophoneButton active={active} onClick={toggle} mock={isMock} />
       )}
       <p className="fine">
         {active ? "Toque para parar" : "Toque para começar uma brincadeira"}
@@ -143,19 +140,6 @@ function Conversation() {
           {error}
         </p>
       )}
-      {!isMock && !active && (
-        <label className="voice-consent">
-          <input
-            type="checkbox"
-            checked={consent}
-            onChange={(e) => setConsent(e.target.checked)}
-          />
-          <span>
-            Sou adulto e aceito enviar minha voz ao Google Gemini para testar
-            esta conversa.
-          </span>
-        </label>
-      )}
       {!isMock && heard && (
         <p className="fine" aria-live="polite">
           Você disse: {heard}
@@ -164,23 +148,19 @@ function Conversation() {
       <p className="fine">
         {isMock
           ? "Nesta demonstração, o microfone não é acessado."
-          : "Use sua própria voz, sem crianças nesta etapa. O perfil não é enviado na conversa."}
+          : "Ao tocar no microfone, sua voz é enviada ao Google Gemini para responder. O perfil não é enviado."}
         <br />
         {isMock
           ? "As respostas aparecem em texto."
           : "O app não salva áudio ou transcrições. Cada sessão dura até 3 minutos ou 10 respostas, com pausa após 1 minuto sem interação; trocar de aba encerra a conversa."}
       </p>
       <Link className="text-link" href="/onboarding">
-        Editar perfil
+        Personalizar perfil (opcional)
       </Link>
     </main>
   );
 }
 
 export default function ProtectedPage() {
-  return (
-    <ParentGate>
-      <ConversationPage />
-    </ParentGate>
-  );
+  return <ConversationPage />;
 }

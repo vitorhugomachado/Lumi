@@ -7,6 +7,7 @@ async function main() {
   const origin = process.env.TEST_APP_ORIGIN;
   if (!origin) throw new Error("Set TEST_APP_ORIGIN.");
   const users = [];
+  const guestMode = process.env.TEST_GUEST === "1";
   async function request(path, method = "GET", data, session) {
     const response = await fetch(origin + path, {
       method,
@@ -31,18 +32,52 @@ async function main() {
     for (let i = 0; i < 2; i++) {
       const email = `lumi-test-${randomUUID()}@example.invalid`;
       const password = randomBytes(24).toString("hex");
-      const result = await request("/api/account", "POST", {
-        action: "register",
-        email,
-        password,
-        adult: true,
-      });
+      const result = guestMode
+        ? await request("/api/guest", "POST", {})
+        : await request("/api/account", "POST", {
+            action: "register",
+            email,
+            password,
+            adult: true,
+          });
       assert.equal(result.status, 200);
       users.push({ email, password, cookie: result.cookie });
       assert(result.cookie);
+      const reused = await request("/api/guest", "POST", {}, users[i]);
+      assert.equal(reused.status, 200);
+      assert.equal(reused.data.user.id, result.data.user.id);
+      assert.equal(reused.data.user.is_guest, guestMode);
+      assert.equal(reused.cookie, result.cookie);
+      assert.equal(
+        (await request("/api/profile", "GET", undefined, users[i])).data
+          .profile,
+        null,
+      );
     }
     const [a, b] = users;
-    if(process.env.TEST_GEMINI === "1") { const credential=await request("/api/gemini-token","POST",{},a); assert.equal(credential.status,200); assert.equal(typeof credential.data.token,"string"); console.log("Authenticated Gemini credential verified (token not logged)."); }
+    const deniedGuest = await fetch(origin + "/api/guest/", {
+      method: "POST",
+      headers: {
+        origin: "https://different.example",
+        "Content-Type": "application/json",
+      },
+      body: "{}",
+    });
+    assert.equal(deniedGuest.status, 403);
+    if (guestMode)
+      assert.equal(
+        (await request("/api/account", "DELETE", {}, a)).status,
+        400,
+      );
+
+    if (process.env.TEST_GEMINI === "1") {
+      const credential = await request("/api/gemini-token", "POST", {}, a);
+      assert.equal(credential.status, 200);
+      assert.equal(typeof credential.data.token, "string");
+      console.log(
+        "Authenticated Gemini credential verified (token not logged).",
+      );
+    }
     assert.equal(
       (
         await request(
@@ -100,27 +135,31 @@ async function main() {
       (await request("/api/profile", "GET", undefined, a)).data.profile.name,
       "Teste",
     );
-    assert.equal(
-      (await request("/api/account", "POST", { action: "logout" }, a)).status,
-      200,
-    );
-    assert.equal(
-      (await request("/api/profile", "GET", undefined, a)).status,
-      401,
-    );
-    const login = await request("/api/account", "POST", {
-      action: "login",
-      email: a.email,
-      password: a.password,
-    });
-    assert.equal(login.status, 200);
-    a.cookie = login.cookie;
-    assert.equal(
-      (await request("/api/profile", "GET", undefined, a)).data.profile.name,
-      "Teste",
-    );
+    if (!guestMode) {
+      assert.equal(
+        (await request("/api/account", "POST", { action: "logout" }, a)).status,
+        200,
+      );
+      assert.equal(
+        (await request("/api/profile", "GET", undefined, a)).status,
+        401,
+      );
+      const login = await request("/api/account", "POST", {
+        action: "login",
+        email: a.email,
+        password: a.password,
+      });
+      assert.equal(login.status, 200);
+      a.cookie = login.cookie;
+      assert.equal(
+        (await request("/api/profile", "GET", undefined, a)).data.profile.name,
+        "Teste",
+      );
+    }
     console.log(
-      "Backend integration passed: auth, persistence, family isolation, idempotency, CSRF, logout and login.",
+      guestMode
+        ? "Guest integration passed: automatic session, reuse, no profile prerequisite, persistence, isolation, idempotency and CSRF."
+        : "Account integration passed: auth, persistence, isolation, idempotency, CSRF, logout and login.",
     );
   } finally {
     let failures = 0;
@@ -129,7 +168,7 @@ async function main() {
         const removed = await request(
           "/api/account",
           "DELETE",
-          { password: user.password },
+          guestMode ? { confirm: true } : { password: user.password },
           user,
         );
         if (removed.status !== 200) failures++;

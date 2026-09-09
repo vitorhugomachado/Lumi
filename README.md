@@ -1,6 +1,6 @@
 # Lumi
 
-Aplicativo Next.js com interface baseada na referência visual, atividades locais, conversa Gemini Live e acesso para responsáveis.
+Aplicativo Next.js com interface baseada na referência visual, atividades locais, conversa Gemini Live e acesso automático, sem cadastro obrigatório.
 
 Repositório: https://github.com/vitorhugomachado/Lumi
 
@@ -15,13 +15,15 @@ Validação: `npm run lint`, `npm test` e `npm run build`.
 
 ## Backend PostgreSQL no Railway
 
-O serviço Lumi usa o PostgreSQL do mesmo projeto pela rede privada. Na versão hospedada, responsáveis criam uma conta com e-mail e senha; perfil e participação ficam associados à conta, com cookies HttpOnly e sessões armazenadas pelo hash. O modo local sem `DATABASE_URL` continua usando o navegador. Dados locais antigos não são enviados automaticamente.
+O serviço Lumi usa o PostgreSQL do mesmo projeto pela rede privada. Na versão hospedada, uma sessão de visitante é criada automaticamente, sem e-mail, senha, perfil ou liberação por responsável. Perfil opcional e participação ficam associados à sessão, com cookie HttpOnly e token armazenado pelo hash. O modo local sem `DATABASE_URL` continua usando o navegador. Dados locais antigos não são enviados automaticamente.
 
 Configure `DATABASE_URL` como `${{Postgres.DATABASE_URL}}`, `APP_ORIGIN` com a origem HTTPS exata sem barra final, `NEXT_PUBLIC_VOICE_PROVIDER=gemini`, `GEMINI_API_KEY` somente no servidor e `PORT=8080`. O serviço Lumi está configurado no Railway para executar `npm run db:migrate` antes da implantação e verificar `/api/health/`. As migrações são transacionais e aditivas; não apagam tabelas existentes. Nunca execute migrações com uma URL de outro projeto.
 
-A conversa Gemini hospedada exige conta e origem autorizada. A API limita tentativas e consultas são parametrizadas e filtradas pela conta autenticada. Há um perfil e até 500 atividades recentes por conta, além de até cinco sessões ativas de sete dias. Áudio, vídeo e transcrições não são persistidos no PostgreSQL.
+A conversa Gemini hospedada usa essa sessão automática e origem autorizada. A API limita tentativas e consultas são parametrizadas e filtradas pela conta autenticada. Há um perfil opcional e até 500 atividades recentes por visitante. A sessão dura sete dias e é renovada ao abrir o app; limpar cookies ou ficar sete dias sem abrir perde o acesso aos dados desse visitante. Áudio, vídeo e transcrições não são persistidos no PostgreSQL.
 
-Veja [docs/backend.md](docs/backend.md) para endpoints, testes e limitações (incluindo ausência de recuperação/verificação por e-mail nesta versão).
+Veja [docs/backend.md](docs/backend.md) para endpoints, testes e limitações (incluindo persistência por navegador).
+
+O botão Começar leva direto ao início. O microfone funciona sem preencher formulários; somente a permissão nativa do navegador é necessária. Cobrança e cadastro associado a pagamento ficam para uma etapa futura. As notas históricas sobre parent gate e cadastro obrigatório abaixo não se aplicam mais ao fluxo atual.
 
 As novas telas e limitações estão descritas em [docs/reference-ui.md](docs/reference-ui.md). As seções abaixo registram as etapas anteriores.
 

@@ -1,5 +1,4 @@
 import { CloudProvider } from "@/components/app/CloudProvider";
-import { ParentAccessProvider } from "@/components/safety/ParentGate";
 import type { Metadata } from "next";
 import { AppShell } from "@/components/app/AppShell";
 import { existsSync } from "node:fs";
@@ -11,8 +10,7 @@ import "@/components/lumi/lumi.css";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Lumi · Pequenas palavras",
-  description:
-    "Um protótipo para brincar com palavras e voz. Para testes com adultos.",
+  description: "Pequenas descobertas para brincar com palavras e voz.",
 };
 export default function RootLayout({
   children,
@@ -27,13 +25,11 @@ export default function RootLayout({
               : null
           }
         >
-          <ParentAccessProvider>
-            <AppShell>
-              <CloudProvider enabled={Boolean(process.env.DATABASE_URL)}>
-                {children}
-              </CloudProvider>
-            </AppShell>
-          </ParentAccessProvider>
+          <AppShell>
+            <CloudProvider enabled={Boolean(process.env.DATABASE_URL)}>
+              {children}
+            </CloudProvider>
+          </AppShell>
         </LumiArtworkProvider>
       </body>
     </html>

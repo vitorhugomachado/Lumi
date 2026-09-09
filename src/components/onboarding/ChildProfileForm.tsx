@@ -138,7 +138,7 @@ function ProfileForm() {
       <p className="hint privacy">
         ♡{" "}
         {cloud.enabled
-          ? "O perfil será salvo na sua conta."
+          ? "O perfil será salvo no servidor e vinculado a este navegador."
           : "O perfil fica somente neste navegador."}
       </p>
       {error && (
@@ -147,7 +147,7 @@ function ProfileForm() {
         </p>
       )}
       <button className="button primary" type="submit" disabled={saving}>
-        {saving ? "Salvando…" : "Continuar"} <span aria-hidden="true">→</span>
+        {saving ? "Salvando…" : "Salvar perfil"} <span aria-hidden="true">→</span>
       </button>
     </form>
   );
