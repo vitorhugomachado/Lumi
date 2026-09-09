@@ -120,10 +120,10 @@ function Conversation() {
         ←
       </Link>
       <div className="badge">
-        ✦ {isMock ? "Conversa simulada" : "Conversa por voz"}
+        ✦ {isMock ? "Conversa simulada" : "Conversa ao vivo"}
       </div>
       <h1>Oi{profile ? `, ${profile.name}` : ""}!</h1>
-      <p className="intro">Vamos conversar?</p>
+      <p className="intro">Fale à vontade. O Lumi acompanha você.</p>
       <LumiScene provider={provider} state={state} mock={isMock} />
       <div className="reply" aria-live="polite">
         {text || "Uma nova descoberta está por aqui."}
@@ -133,7 +133,9 @@ function Conversation() {
         <MicrophoneButton active={active} onClick={toggle} mock={isMock} />
       )}
       <p className="fine">
-        {active ? "Toque para parar" : "Toque para começar uma brincadeira"}
+        {active
+          ? "Microfone aberto · você pode falar enquanto o Lumi fala. Toque para encerrar."
+          : "Toque uma vez para começar a conversa"}
       </p>
       {error && (
         <p className="error-box" role="alert">

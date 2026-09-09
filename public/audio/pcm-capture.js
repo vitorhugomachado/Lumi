@@ -1,9 +1,9 @@
-/* AudioWorklet: mono capture in bounded ~85 ms chunks at 24 kHz.
+/* AudioWorklet: mono capture in bounded ~43 ms chunks at 24 kHz.
    The output remains silent: microphone audio is never monitored locally. */
 class PcmCapture extends AudioWorkletProcessor {
   constructor() {
     super();
-    this.chunk = new Float32Array(2048);
+    this.chunk = new Float32Array(1024);
     this.offset = 0;
   }
   process(inputs) {
@@ -13,7 +13,7 @@ class PcmCapture extends AudioWorkletProcessor {
       this.chunk[this.offset++] = channel[i];
       if (this.offset === this.chunk.length) {
         this.port.postMessage(this.chunk, [this.chunk.buffer]);
-        this.chunk = new Float32Array(2048);
+        this.chunk = new Float32Array(1024);
         this.offset = 0;
       }
     }

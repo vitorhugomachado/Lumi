@@ -1,18 +1,29 @@
 import { LUMI_SYSTEM_PROMPT } from "../../prompts/lumiSystemPrompt";
-import { Modality, type LiveConnectConfig } from "@google/genai";
+import {
+  ActivityHandling,
+  Modality,
+  ThinkingLevel,
+  type LiveConnectConfig,
+} from "@google/genai";
 
 export const GEMINI_MODEL = "gemini-3.1-flash-live-preview";
 export const GEMINI_API_VERSION = "v1beta";
 export const SESSION_SECONDS = 180;
 
-/** Fixed adult-test instructions. No child profile or free-form prompt is sent. */
+/** Fixed conversational instructions. No child profile or free-form prompt is sent. */
 export function liveConfig(): LiveConnectConfig {
   return {
     responseModalities: [Modality.AUDIO],
     inputAudioTranscription: {},
     outputAudioTranscription: {},
+    thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
     realtimeInputConfig: {
-      automaticActivityDetection: { silenceDurationMs: 800 },
+      activityHandling: ActivityHandling.START_OF_ACTIVITY_INTERRUPTS,
+      automaticActivityDetection: {
+        disabled: false,
+        prefixPaddingMs: 100,
+        silenceDurationMs: 500,
+      },
     },
     systemInstruction: LUMI_SYSTEM_PROMPT,
   };

@@ -97,11 +97,11 @@ export class GeminiLiveProvider implements VoiceProvider {
     this.fail(new Error(SESSION_END_MESSAGES[reason]));
   }
   private awaitReply() {
-    if (!this.reviewTimeout)
-      this.reviewTimeout = setTimeout(
-        () => this.endSession("unverified-response"),
-        SAFETY_LIMITS.replyWaitMs,
-      );
+    clearTimeout(this.reviewTimeout);
+    this.reviewTimeout = setTimeout(
+      () => this.endSession("unverified-response"),
+      SAFETY_LIMITS.replyWaitMs,
+    );
   }
   private inputText = "";
   private speechSeen = false;
@@ -137,9 +137,7 @@ export class GeminiLiveProvider implements VoiceProvider {
       };
       audio.onDrain = () => {
         if (valid() && this.active && this.turnComplete) {
-          this.turnComplete = false;
-          this.limiter.replyFinished();
-          if (this.active) this.emit("listening");
+          this.finishPlayback();
         }
       };
       audio.onChunk = (data, rate, level) => {
@@ -157,7 +155,7 @@ export class GeminiLiveProvider implements VoiceProvider {
               if (valid() && this.active && !audio.playing && this.speechSeen)
                 this.emit("thinking");
               this.speechSeen = false;
-            }, 850);
+            }, 550);
           }
         } catch {
           this.fail(
@@ -217,7 +215,7 @@ export class GeminiLiveProvider implements VoiceProvider {
         if (valid())
           this.fail(
             new Error(
-              "A sessão de teste de três minutos terminou. Toque em Conversar para iniciar outra.",
+              "A sessão de três minutos terminou. Toque em Conversar para iniciar outra.",
             ),
           );
       }, remaining);
@@ -249,7 +247,7 @@ export class GeminiLiveProvider implements VoiceProvider {
     this.emit("thinking");
     try {
       this.session.sendRealtimeInput({
-        text: "Comece a brincadeira: diga um oi bem curto e faça uma pergunta simples sobre um animal.",
+        text: "Cumprimente com um oi acolhedor e um comentário brincalhão bem curto. Sem pergunta de abertura. Depois acompanhe o que eu disser numa conversa natural.",
       });
     } catch {
       this.fail(
@@ -258,22 +256,42 @@ export class GeminiLiveProvider implements VoiceProvider {
     }
   }
 
+  private finishPlayback() {
+    if (!this.turnComplete) return;
+    this.turnComplete = false;
+    this.limiter.replyFinished();
+    if (this.active) this.emit("listening");
+  }
+
+  private interruptPlayback() {
+    this.audio?.interrupt();
+    this.reply.reset();
+    clearTimeout(this.reviewTimeout);
+    this.reviewTimeout = undefined;
+    clearTimeout(this.silence);
+    this.speechSeen = false;
+    this.turnComplete = false;
+    this.newTurn = true;
+    this.limiter.activity();
+    this.emit("listening");
+  }
+
   private handleMessage(message: LiveServerMessage) {
     if (!this.active) return;
+    // Generation can finish before the speakers drain. Server interruption alone
+    // cannot cancel that tail, so confirmed new speech also stops queued audio.
+    if (
+      message.voiceActivity?.voiceActivityType === "ACTIVITY_START" &&
+      this.turnComplete &&
+      this.audio?.playing
+    )
+      this.interruptPlayback();
     const content = message.serverContent;
     if (!content) return;
     try {
-      if (content.interrupted) {
-        this.audio?.interrupt();
-        this.reply.reset();
-        clearTimeout(this.reviewTimeout);
-        this.reviewTimeout = undefined;
-        this.turnComplete = false;
-        this.newTurn = true;
-        this.emit("listening");
-        return;
-      }
+      if (content.interrupted) this.interruptPlayback();
       if (content.inputTranscription?.text) {
+        if (this.turnComplete && this.audio?.playing) this.interruptPlayback();
         this.inputText += content.inputTranscription.text;
         if (this.inputText.length > 2000 || flagContent(this.inputText)) {
           this.endSession("safety");
@@ -285,6 +303,8 @@ export class GeminiLiveProvider implements VoiceProvider {
         );
         this.awaitReply();
       }
+      // Still process input in combined interruption events, but discard old output.
+      if (content.interrupted) return;
       if (
         content.modelTurn?.parts?.length ||
         content.outputTranscription?.text
@@ -297,10 +317,15 @@ export class GeminiLiveProvider implements VoiceProvider {
         this.turnComplete = false;
         clearTimeout(this.silence);
         this.awaitReply();
-        this.emit("thinking");
       }
-      if (content.outputTranscription?.text)
+      // Check all available text before playing any audio from the same event.
+      // Transcription can arrive after audio: this is live monitoring, not pre-approval.
+      if (content.outputTranscription?.text) {
         this.reply.appendText(content.outputTranscription.text);
+        this.transcripts.forEach((fn) =>
+          fn({ role: "assistant", text: this.reply.transcript }),
+        );
+      }
       for (const part of content.modelTurn?.parts ?? []) {
         if (
           part.inlineData?.data &&
@@ -308,17 +333,20 @@ export class GeminiLiveProvider implements VoiceProvider {
         )
           this.reply.appendAudio(part.inlineData.data);
       }
-      if (content.turnComplete) {
-        const approved = this.reply.approve();
+      // Validate final metadata before playback if it accompanies the last chunk.
+      if (content.turnComplete && !this.newTurn) {
+        const finished = this.reply.approve();
+        for (const chunk of finished.chunks) this.audio?.play(chunk);
         clearTimeout(this.reviewTimeout);
         this.reviewTimeout = undefined;
-        this.transcripts.forEach((fn) =>
-          fn({ role: "assistant", text: approved.text }),
-        );
-        for (const chunk of approved.chunks) this.audio?.play(chunk);
         this.turnComplete = true;
         this.newTurn = true;
-        this.emit("speaking");
+        if (this.audio?.playing) this.emit("speaking");
+        else this.finishPlayback();
+      } else {
+        const chunks = this.reply.drainAudio();
+        for (const chunk of chunks) this.audio?.play(chunk);
+        if (chunks.length) this.emit("speaking");
       }
     } catch (error) {
       this.endSession(

@@ -607,7 +607,7 @@ const {
   ParentAccessStore,
   checkChallenge,
 } = require("../src/lib/safety/ParentAccessStore.ts");
-test("safety blocks fragmented requests before audio playback", async () => {
+test("streaming stops playback when a later transcript fragment flags content", async () => {
   const h = harness();
   await h.p.connect();
   h.p.startConversation(profile);
@@ -621,20 +621,20 @@ test("safety blocks fragmented requests before audio playback", async () => {
       outputTranscription: { text: "Qual seu tele" },
     },
   });
-  assert.equal(h.audio.played.length, 0);
+  assert.equal(h.audio.played.length, 1);
   h.callbacks.onmessage({
     serverContent: {
       outputTranscription: { text: "fone?" },
       turnComplete: true,
     },
   });
-  assert.equal(h.audio.played.length, 0);
+  assert.equal(h.audio.played.length, 1);
   assert.equal(h.errors.length, 1);
   assert.equal(h.session.closed, 1);
   h.callbacks.onmessage({
     serverContent: { outputTranscription: { text: "Oi!" }, turnComplete: true },
   });
-  assert.equal(h.audio.played.length, 0);
+  assert.equal(h.audio.played.length, 1);
 });
 test("safety fails closed on missing transcript and sensitive input", async () => {
   for (const content of [
@@ -696,4 +696,120 @@ test("session limits enforce inactivity, turns and total duration", (t) => {
   limiter.stop();
   t.mock.timers.tick(300000);
   assert.equal(ended.length, 0);
+});
+
+test("audio streams before turnComplete, mic stays open, transcript updates do not stop speaking", async () => {
+  const h = harness();
+  await h.p.connect();
+  h.p.startConversation(profile);
+  h.callbacks.onmessage({
+    serverContent: {
+      modelTurn: {
+        parts: [
+          { inlineData: { mimeType: "audio/pcm;rate=24000", data: "AAA=" } },
+        ],
+      },
+    },
+  });
+  assert.equal(h.audio.played.length, 1);
+  assert.equal(h.states.at(-1), "speaking");
+  h.audio.onChunk("AAA=", 24000, 0);
+  assert.equal(h.session.sent.at(-1).audio.data, "AAA=");
+  h.callbacks.onmessage({
+    serverContent: { outputTranscription: { text: "Oi, que legal!" } },
+  });
+  assert.equal(h.states.at(-1), "speaking");
+  assert.equal(h.transcripts.at(-1).text, "Oi, que legal!");
+  // Speakers may drain before the server announces turnComplete.
+  h.audio.playing = false;
+  h.audio.onDrain();
+  h.callbacks.onmessage({ serverContent: { turnComplete: true } });
+  assert.equal(h.states.at(-1), "listening");
+  h.callbacks.onmessage({ serverContent: { turnComplete: true } });
+  assert.equal(h.errors.length, 0);
+  h.p.disconnect();
+});
+
+test("interruption keeps simultaneous user transcript and discards old response audio", async () => {
+  const h = harness();
+  await h.p.connect();
+  h.p.startConversation(profile);
+  h.callbacks.onmessage({
+    serverContent: {
+      interrupted: true,
+      inputTranscription: { text: "Olha o gato!" },
+      modelTurn: {
+        parts: [
+          { inlineData: { mimeType: "audio/pcm;rate=24000", data: "AAA=" } },
+        ],
+      },
+    },
+  });
+  assert.equal(h.audio.played.length, 0);
+  assert.equal(h.transcripts.at(-1).text, "Olha o gato!");
+  h.callbacks.onmessage({ serverContent: { turnComplete: true } });
+  assert.equal(h.errors.length, 0);
+  h.callbacks.onmessage({
+    serverContent: {
+      outputTranscription: { text: "Miau!" },
+      modelTurn: {
+        parts: [
+          { inlineData: { mimeType: "audio/pcm;rate=24000", data: "AAA=" } },
+        ],
+      },
+      turnComplete: true,
+    },
+  });
+  assert.equal(h.audio.played.length, 1);
+  assert.equal(h.transcripts.at(-1).text, "Miau!");
+  assert.equal(h.tokens, 1);
+  h.p.disconnect();
+});
+
+test("new speech interrupts queued audio even after generation has ended", async () => {
+  for (const speech of [
+    { serverContent: { inputTranscription: { text: "Um pato!" } } },
+    { voiceActivity: { voiceActivityType: "ACTIVITY_START" } },
+  ]) {
+    const h = harness();
+    await h.p.connect();
+    h.p.startConversation(profile);
+    h.callbacks.onmessage({
+      serverContent: {
+        outputTranscription: { text: "Miau!" },
+        modelTurn: {
+          parts: [
+            { inlineData: { mimeType: "audio/pcm;rate=24000", data: "AAA=" } },
+          ],
+        },
+        turnComplete: true,
+      },
+    });
+    assert.equal(h.audio.playing, true);
+    h.callbacks.onmessage(speech);
+    assert.equal(h.audio.playing, false);
+    assert.equal(h.states.at(-1), "listening");
+    assert.equal(h.session.closed, 0);
+    h.p.disconnect();
+  }
+});
+
+test("missing late transcript stops an already streaming reply", async () => {
+  const h = harness();
+  await h.p.connect();
+  h.p.startConversation(profile);
+  h.callbacks.onmessage({
+    serverContent: {
+      modelTurn: {
+        parts: [
+          { inlineData: { mimeType: "audio/pcm;rate=24000", data: "AAA=" } },
+        ],
+      },
+    },
+  });
+  assert.equal(h.audio.played.length, 1);
+  h.callbacks.onmessage({ serverContent: { turnComplete: true } });
+  assert.equal(h.audio.playing, false);
+  assert.equal(h.errors.length, 1);
+  h.p.disconnect();
 });

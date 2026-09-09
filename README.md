@@ -4,6 +4,10 @@ Aplicativo Next.js com interface baseada na referência visual, atividades locai
 
 Repositório: https://github.com/vitorhugomachado/Lumi
 
+## Conversa ao vivo
+
+Áudio em streaming, microfone contínuo, interrupções durante a fala e comentários naturais sem questionário. Os filtros acompanham a transcrição durante a reprodução; não aguardam a resposta inteira. Veja [docs/live-conversation.md](docs/live-conversation.md). Esta seção substitui o comportamento de buffer descrito nas etapas históricas abaixo.
+
 ## Executar localmente
 
 1. `npm ci`

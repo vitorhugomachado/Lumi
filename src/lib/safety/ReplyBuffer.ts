@@ -1,6 +1,6 @@
 import { flagContent, SAFETY_LIMITS } from "./rules";
 
-/** Holds a bounded turn until its output transcript has passed local checks. */
+/** Bounds and monitors a turn. Streaming consumers drain audio before final review. */
 export class ReplyBuffer {
   private chunks: string[] = [];
   private text = "";
@@ -25,9 +25,17 @@ export class ReplyBuffer {
       throw new Error("long-reply");
     this.chunks.push(data);
   }
+  get transcript() {
+    return this.text;
+  }
+  drainAudio() {
+    const chunks = this.chunks;
+    this.chunks = [];
+    return chunks;
+  }
   approve() {
     const text = this.text.trim();
-    if (!text || !this.chunks.length || flagContent(text))
+    if (!text || !this.bytes || flagContent(text))
       throw new Error("unverified-reply");
     const result = { text, chunks: this.chunks };
     this.reset();
