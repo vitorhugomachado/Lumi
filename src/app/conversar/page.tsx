@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { loadProfile } from "@/lib/child/storage";
 import type { VoiceState } from "@/lib/voice/VoiceProvider";
 import { createVoiceProvider } from "@/lib/voice/createVoiceProvider";
-import { LumiCharacter } from "@/components/lumi/LumiCharacter";
+import { LumiScene } from "@/components/lumi/LumiScene";
 import { LumiState } from "@/components/lumi/LumiState";
-import { VoiceWaveform } from "@/components/voice/VoiceWaveform";
 import { MicrophoneButton } from "@/components/voice/MicrophoneButton";
 const subscribe = () => () => {};
 export default function ConversationPage() {
@@ -112,8 +111,7 @@ function Conversation() {
       </div>
       <h1>Oi{profile ? `, ${profile.name}` : ""}!</h1>
       <p className="intro">Vamos conversar?</p>
-      <LumiCharacter state={state} />
-      <VoiceWaveform state={state} />
+      <LumiScene provider={provider} state={state} mock={isMock} />
       <div className="reply" aria-live="polite">
         {text || "Uma nova descoberta está por aqui."}
       </div>

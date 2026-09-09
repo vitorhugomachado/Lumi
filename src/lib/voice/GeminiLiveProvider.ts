@@ -6,6 +6,7 @@ import {
 import type { ChildProfile } from "../child/profile";
 import type { Transcript, VoiceProvider, VoiceState } from "./VoiceProvider";
 import { BrowserAudio, type AudioIO } from "./audio/BrowserAudio";
+import { AudioLevelStore, meterLevel, type AudioLevels } from "./audio/levels";
 import {
   GEMINI_API_VERSION,
   GEMINI_MODEL,
@@ -71,6 +72,7 @@ const defaults: GeminiDependencies = {
 
 /** Audio and credentials exist in memory only, and are released on every exit. */
 export class GeminiLiveProvider implements VoiceProvider {
+  private levels = new AudioLevelStore();
   private states = new Set<(state: VoiceState) => void>();
   private transcripts = new Set<(transcript: Transcript) => void>();
   private errors = new Set<(error: Error) => void>();
@@ -107,6 +109,9 @@ export class GeminiLiveProvider implements VoiceProvider {
     try {
       const audio = this.deps.audio();
       this.audio = audio;
+      audio.onOutputLevel = (level) => {
+        if (valid()) this.levels.update({ output: meterLevel(level) });
+      };
       audio.onFailure = (error) => {
         if (valid()) this.fail(error);
       };
@@ -115,6 +120,7 @@ export class GeminiLiveProvider implements VoiceProvider {
       };
       audio.onChunk = (data, rate, level) => {
         if (!valid() || !this.active || !this.session) return;
+        this.levels.update({ input: meterLevel(level) });
         try {
           this.session.sendRealtimeInput({
             audio: { data, mimeType: `audio/pcm;rate=${rate}` },
@@ -308,6 +314,7 @@ export class GeminiLiveProvider implements VoiceProvider {
     this.outputText = "";
     this.inputText = "";
     this.speechSeen = false;
+    this.levels.reset();
   }
   stopConversation() {
     this.release();
@@ -333,5 +340,11 @@ export class GeminiLiveProvider implements VoiceProvider {
     return () => {
       this.errors.delete(fn);
     };
+  }
+  getAudioLevels() {
+    return this.levels.getSnapshot();
+  }
+  onAudioLevels(fn: (levels: AudioLevels) => void) {
+    return this.levels.subscribe(fn);
   }
 }

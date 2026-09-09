@@ -1,6 +1,8 @@
-# Lumi — Space 2: voice-gemini
+# Lumi — Space 3: lumi-ui
 
-Conversa por voz real com Gemini Live, em worktree e branch `voice-gemini`. A branch `foundation` e sua prévia estática permanecem preservadas. Esta etapa é exclusivamente para testes com adultos; não está liberada para coleta de áudio de crianças.
+Interface reativa à voz, em worktree `lumi-app-lumi-ui` e branch `lumi-ui`, baseada na etapa `voice-gemini`. As branches anteriores permanecem preservadas. As barras de volume usam o microfone e o áudio realmente reproduzido; o personagem acompanha os estados. Esta etapa é exclusivamente para testes com adultos; não está liberada para coleta de áudio de crianças.
+
+Veja `docs/space-3-lumi-ui.md` para alterações e validação. **A arte oficial ainda não foi fornecida**: o personagem provisório continua disponível, preparado para receber `public/lumi/lumi.png`.
 
 ## Executar localmente
 
@@ -20,12 +22,12 @@ GEMINI_API_KEY=sua_chave_do_google_ai_studio
 Não compartilhe a chave no chat nem adicione `.env.local` ao Git. A chave existe apenas no servidor; o navegador recebe uma credencial efêmera de uso único. Reinicie o servidor após alterar a configuração.
 
 ```sh
-npm run dev -- --port 3001
+npm run dev -- --port 3002
 ```
 
-Abra **http://127.0.0.1:3001**. Cadastre um perfil de demonstração, confirme que está testando com sua própria voz adulta e toque em Conversar. Permita o microfone quando solicitado. Lumi faz uma saudação, responde com áudio e aceita novas falas até você parar. Use fones para reduzir eco. O botão de parada, sair da página ou trocar de aba encerra a sessão e libera o microfone.
+Abra **http://127.0.0.1:3002**. Cadastre um perfil de demonstração, confirme que está testando com sua própria voz adulta e toque em Conversar. Permita o microfone quando solicitado. Lumi faz uma saudação, responde com áudio e aceita novas falas até você parar. Use fones para reduzir eco. O botão de parada, sair da página ou trocar de aba encerra a sessão e libera o microfone.
 
-O perfil de `localhost:3000`, `127.0.0.1:3001` e da prévia hospedada não é compartilhado: o localStorage pertence a cada origem. Cadastre novamente o perfil nesta prévia.
+O perfil de `localhost:3000`, `127.0.0.1:3002` e da prévia hospedada não é compartilhado: o localStorage pertence a cada origem. Cadastre novamente o perfil nesta prévia.
 
 ## Implementação
 
@@ -54,7 +56,7 @@ Use `NEXT_PUBLIC_VOICE_PROVIDER=mock` e reinicie. O mock continua funcionando se
 npm run lint
 npm test
 npm run build
-npm start -- --port 3001
+npm start -- --port 3002
 ```
 
 Não rode dev e start na mesma porta ao mesmo tempo. O build agora contém uma rota dinâmica de servidor e não pode ser exportado como site estático. `LUMI_STATIC_EXPORT` não é mais utilizado nesta branch.
@@ -67,7 +69,7 @@ node --env-file=.env.local scripts/check-gemini.cjs
 
 Esse teste cria um token, abre uma sessão, envia um pequeno bloco de silêncio e uma mensagem fixa e verifica áudio e transcrição de saída. Não grava nem reproduz áudio, não usa o perfil e não imprime credenciais. Não faz parte de `npm test`.
 
-Validação nesta entrega: 17 testes automatizados, teste Live real aprovado (12 blocos de áudio e transcrição recebida) e rota HTTP real emitindo token com `no-store`. A validação de microfone físico, reprodução nos alto-falantes, eco e permissão no navegador depende de teste manual com um adulto. O SDK 2.21.0 ainda imprime um aviso mencionando `v1alpha`; mantemos `v1beta` conforme a documentação oficial atual e o teste real bem-sucedido.
+Validação nesta entrega: 21 testes automatizados, lint e build aprovados. Na etapa voice-gemini anterior, o teste Live real recebeu 12 blocos de áudio e transcrição, e a rota HTTP emitiu token com `no-store`. A validação de microfone físico, reprodução nos alto-falantes, eco e permissão no navegador depende de teste manual com um adulto. O SDK 2.21.0 ainda imprime um aviso mencionando `v1alpha`; mantemos `v1beta` conforme a documentação oficial atual e o teste real bem-sucedido.
 
 ## Hospedagem e limites desta etapa
 
@@ -75,18 +77,20 @@ Validação nesta entrega: 17 testes automatizados, teste Live real aprovado (12
 
 Os comandos dev/start vinculam o servidor a `127.0.0.1`. O emissor exige origem local correspondente e limita a cinco tentativas por minuto por processo. Isso é uma barreira de teste local, **não autenticação para um servidor público**. Não exponha a porta por túnel ou proxy. Antes de hospedar voz, será necessário um runtime compatível com Next.js no servidor, controle de acesso verificado e limitação persistente no emissor. O manifesto Sites mantém o mesmo projeto, sem declarar uma saída estática inexistente.
 
-Sessões de teste terminam em até três minutos. Erros não reconectam automaticamente; o adulto inicia uma nova sessão. Esta etapa não implementa retomada de sessões longas, waveform baseada na amplitude, arte oficial, lip-sync, PWA offline ou parent gate.
+Sessões de teste terminam em até três minutos. Erros não reconectam automaticamente; o adulto inicia uma nova sessão. Esta etapa não implementa retomada de sessões longas, arte oficial, lip-sync, PWA offline ou parent gate.
 
 O consentimento atual é uma confirmação para testes com adultos, não um parent gate. O prompt fixo é somente uma base; não substitui a etapa `safety`, nem torna o produto apropriado para uso por crianças.
 
 ## Próximas etapas
 
 1. Validar microfone e reprodução com adulto no navegador local e preparar hospedagem com servidor e acesso controlado.
-2. `lumi-ui`: arte oficial, waveform real e animações refinadas.
+2. Integrar a arte oficial fornecida pelo usuário e validar a aparência em celular.
 3. `safety`: prompt contextual revisado, controles parentais e avaliação das proteções antes de testes com crianças.
 
 ## Referências oficiais consultadas
 
 - [Tokens efêmeros](https://ai.google.dev/gemini-api/docs/live-api/ephemeral-tokens)
 - [Áudio, transcrições, VAD e interrupções](https://ai.google.dev/gemini-api/docs/live-api/capabilities)
+
+
 

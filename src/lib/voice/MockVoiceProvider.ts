@@ -1,12 +1,18 @@
 import type { ChildProfile } from "../child/profile";
 import type { VoiceProvider, VoiceState, Transcript } from "./VoiceProvider";
+import { AudioLevelStore, type AudioLevels } from "./audio/levels";
 export class MockVoiceProvider implements VoiceProvider {
+  private levels = new AudioLevelStore();
+  private levelTimer?: ReturnType<typeof setTimeout>;
+  private state: VoiceState = "idle";
   private connected = false;
   private timers: ReturnType<typeof setTimeout>[] = [];
   private states = new Set<(state: VoiceState) => void>();
   private transcripts = new Set<(transcript: Transcript) => void>();
   private errors = new Set<(error: Error) => void>();
   private emit(state: VoiceState) {
+    this.state = state;
+    if (state !== "listening" && state !== "speaking") this.levels.reset();
     this.states.forEach((fn) => fn(state));
   }
   async connect() {
@@ -27,6 +33,19 @@ export class MockVoiceProvider implements VoiceProvider {
     }
     this.stopConversation();
     this.emit("listening");
+    let frame = 0;
+    const animate = () => {
+      if (this.state === "idle" || this.state === "error") return;
+      const value =
+        0.06 +
+        Math.abs(Math.sin(++frame * 0.47) * Math.sin(frame * 0.19)) * 0.65;
+      this.levels.update({
+        input: this.state === "listening" ? value : 0,
+        output: this.state === "speaking" ? value : 0,
+      });
+      this.levelTimer = setTimeout(animate, 80);
+    };
+    this.levelTimer = setTimeout(animate, 80);
     this.timers.push(setTimeout(() => this.emit("thinking"), 2000));
     this.timers.push(
       setTimeout(() => {
@@ -57,6 +76,8 @@ export class MockVoiceProvider implements VoiceProvider {
     );
   }
   stopConversation() {
+    clearTimeout(this.levelTimer);
+    this.levels.reset();
     this.timers.forEach(clearTimeout);
     this.timers = [];
     this.emit("idle");
@@ -78,5 +99,11 @@ export class MockVoiceProvider implements VoiceProvider {
     return () => {
       this.errors.delete(fn);
     };
+  }
+  getAudioLevels() {
+    return this.levels.getSnapshot();
+  }
+  onAudioLevels(fn: (levels: AudioLevels) => void) {
+    return this.levels.subscribe(fn);
   }
 }

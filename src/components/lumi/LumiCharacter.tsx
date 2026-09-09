@@ -1,11 +1,58 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import type { VoiceState } from "@/lib/voice/VoiceProvider";
-export function LumiCharacter({ state }: { state: VoiceState }) {
-  const [missing, setMissing] = useState(false);
+import { useLumiArtwork } from "./LumiArtworkProvider";
+
+function Artwork({ src }: { src: string | null }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
   return (
-    <div className={`character-stage ${state}`}>
+    <>
+      <div
+        className="placeholder"
+        style={{ visibility: loaded && !failed ? "hidden" : "visible" }}
+        aria-hidden="true"
+      >
+        <span className="eyes">• •</span>
+        <span className="smile">⌣</span>
+        <span className="chest-star">★</span>
+      </div>
+      {src && !failed && (
+        <Image
+          className="character-artwork"
+          style={{ opacity: loaded ? 1 : 0 }}
+          src={src}
+          alt=""
+          width={220}
+          height={240}
+          unoptimized
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+        />
+      )}
+      <span className="chest-glow" aria-hidden="true" />
+    </>
+  );
+}
+
+export function LumiCharacter({
+  state,
+  level = 0,
+}: {
+  state: VoiceState;
+  level?: number;
+}) {
+  const src = useLumiArtwork();
+  const intensity = Number.isFinite(level)
+    ? Math.max(0, Math.min(1, level))
+    : 0;
+  return (
+    <div
+      className={`character-stage ${state}`}
+      data-voice-state={state}
+      style={{ "--voice-level": intensity } as CSSProperties}
+    >
       <span className="spark spark-one" aria-hidden="true">
         ✦
       </span>
@@ -13,35 +60,20 @@ export function LumiCharacter({ state }: { state: VoiceState }) {
         ✧
       </span>
       <span className="orbit" aria-hidden="true" />
+      <span className="listening-ring" aria-hidden="true" />
       <div
         className="character"
         role="img"
         aria-label="Lumi, seu amigo de palavras"
       >
-        {missing ? (
-          <div className="placeholder">
-            <span className="eyes" aria-hidden="true">
-              • •
-            </span>
-            <span className="smile" aria-hidden="true">
-              ⌣
-            </span>
-            <span className="chest-star" aria-hidden="true">
-              ★
-            </span>
-          </div>
-        ) : (
-          <Image
-            src="/lumi/lumi.png"
-            alt=""
-            width={220}
-            height={250}
-            unoptimized
-            onError={() => setMissing(true)}
-          />
-        )}
+        <Artwork key={src ?? "placeholder"} src={src} />
       </div>
       <span className="ground" aria-hidden="true" />
+      <span className="thinking-dots" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </span>
     </div>
   );
 }

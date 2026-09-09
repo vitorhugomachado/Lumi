@@ -1,10 +1,12 @@
 import { decodePcm, encodePcm } from "./pcm";
+import { rms } from "./levels";
 
 export interface AudioIO {
   open(signal: AbortSignal): Promise<void>;
   onChunk: (data: string, sampleRate: number, level: number) => void;
   onDrain: () => void;
   onFailure: (error: Error) => void;
+  onOutputLevel: (level: number) => void;
   readonly playing: boolean;
   play(data: string): void;
   interrupt(): void;
@@ -16,6 +18,11 @@ export class BrowserAudio implements AudioIO {
   onChunk: AudioIO["onChunk"] = () => {};
   onDrain = () => {};
   onFailure: AudioIO["onFailure"] = () => {};
+  onOutputLevel: AudioIO["onOutputLevel"] = () => {};
+  private analyser?: AnalyserNode;
+  private meterSamples = new Float32Array(512);
+  private meterFrame?: number;
+  private lastMeterTime = -Infinity;
   private context?: AudioContext;
   private stream?: MediaStream;
   private input?: MediaStreamAudioSourceNode;
@@ -70,6 +77,10 @@ export class BrowserAudio implements AudioIO {
       await context.audioWorklet.addModule("/audio/pcm-capture.js");
       signal.throwIfAborted();
       this.worklet = new AudioWorkletNode(context, "lumi-pcm-capture");
+      // Only model playback enters this analyser, never the microphone.
+      this.analyser = context.createAnalyser();
+      this.analyser.fftSize = 512;
+      this.analyser.connect(context.destination);
       this.worklet.onprocessorerror = () =>
         this.onFailure(new Error("Não foi possível processar o microfone."));
       this.worklet.port.onmessage = ({ data }: MessageEvent<Float32Array>) => {
@@ -116,18 +127,47 @@ export class BrowserAudio implements AudioIO {
     buffer.copyToChannel(samples, 0);
     const source = context.createBufferSource();
     source.buffer = buffer;
-    source.connect(context.destination);
+    source.connect(this.analyser ?? context.destination);
     this.sources.add(source);
     source.onended = () => {
       source.disconnect();
       this.sources.delete(source);
-      if (!this.sources.size) this.onDrain();
+      if (!this.sources.size) {
+        this.stopMeter();
+        this.onDrain();
+      }
     };
     source.start(start);
     this.nextStart = start + buffer.duration;
+    this.startMeter();
+  }
+
+  private startMeter() {
+    if (this.meterFrame !== undefined || !this.analyser) return;
+    const measure = (time: number) => {
+      if (!this.analyser || !this.sources.size) {
+        this.meterFrame = undefined;
+        return;
+      }
+      if (time - this.lastMeterTime >= 50) {
+        this.analyser.getFloatTimeDomainData(this.meterSamples);
+        this.onOutputLevel(rms(this.meterSamples));
+        this.lastMeterTime = time;
+      }
+      this.meterFrame = requestAnimationFrame(measure);
+    };
+    this.meterFrame = requestAnimationFrame(measure);
+  }
+
+  private stopMeter() {
+    if (this.meterFrame !== undefined) cancelAnimationFrame(this.meterFrame);
+    this.meterFrame = undefined;
+    this.lastMeterTime = -Infinity;
+    this.onOutputLevel(0);
   }
 
   interrupt() {
+    this.stopMeter();
     for (const source of this.sources) {
       source.onended = null;
       source.stop();
@@ -148,6 +188,8 @@ export class BrowserAudio implements AudioIO {
       this.worklet.disconnect();
     }
     this.input?.disconnect();
+    this.analyser?.disconnect();
+    this.analyser = undefined;
     this.stream?.getTracks().forEach((track) => {
       track.onended = null;
       track.stop();

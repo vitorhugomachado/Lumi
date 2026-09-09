@@ -1,0 +1,246 @@
+/* Space 3: motion is derived from state and measured audio level. */
+.character-stage {
+  isolation: isolate;
+}
+.character-stage .character {
+  width: 220px;
+  height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: 50% 85%;
+  transition:
+    transform 110ms ease-out,
+    opacity 200ms;
+}
+.character-artwork {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity 180ms ease;
+}
+.character-stage .orbit {
+  transition:
+    background-color 350ms,
+    transform 180ms;
+  background: var(--lavender-light);
+}
+.character-stage .ground {
+  transition:
+    transform 130ms,
+    opacity 130ms;
+}
+.character-stage .eyes {
+  transform-origin: center;
+  animation: lumi-blink 7s infinite;
+}
+.listening-ring {
+  position: absolute;
+  width: 255px;
+  height: 255px;
+  border: 2px solid #8b73e655;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.9);
+  transition:
+    transform 110ms ease-out,
+    opacity 200ms;
+}
+.character-stage.listening .listening-ring {
+  opacity: 0.8;
+  transform: scale(calc(0.94 + var(--voice-level) * 0.15));
+}
+.character-stage.listening .orbit {
+  background: var(--mint);
+}
+.character-stage.listening .character {
+  animation: none;
+  transform: rotate(calc(-3deg - var(--voice-level) * 2deg))
+    translateY(calc(var(--voice-level) * -3px));
+}
+.character-stage.speaking .orbit {
+  background: var(--lavender-light);
+  transform: scale(calc(1 + var(--voice-level) * 0.035));
+}
+.character-stage.speaking .character {
+  animation: none;
+  transform: translateY(calc(-2px - var(--voice-level) * 9px))
+    rotate(calc(var(--voice-level) * 1.5deg));
+}
+.character-stage.speaking .ground {
+  transform: scaleX(calc(1 - var(--voice-level) * 0.15));
+  opacity: 0.75;
+}
+.character-stage.thinking .character {
+  animation: lumi-ponder 3s ease-in-out infinite;
+}
+.character-stage.thinking .orbit {
+  background: #fff0bd;
+}
+.chest-glow {
+  position: absolute;
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  top: 54%;
+  left: calc(50% - 41px);
+  background: radial-gradient(circle, #ffe68299, transparent 70%);
+  opacity: 0;
+  pointer-events: none;
+}
+.thinking .chest-glow {
+  animation: lumi-glow 1.5s ease-in-out infinite;
+}
+.thinking-dots {
+  position: absolute;
+  display: flex;
+  gap: 5px;
+  right: 48px;
+  top: 29px;
+  padding: 11px 13px;
+  border-radius: 16px 16px 16px 4px;
+  background: #fffdf8;
+  box-shadow: 0 3px 12px #31305a0b;
+  opacity: 0;
+  transition: opacity 180ms;
+}
+.thinking-dots i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--action);
+}
+.thinking .thinking-dots {
+  opacity: 1;
+}
+.thinking .thinking-dots i {
+  animation: lumi-dot 1.3s ease-in-out infinite;
+}
+.thinking .thinking-dots i:nth-child(2) {
+  animation-delay: 150ms;
+}
+.thinking .thinking-dots i:nth-child(3) {
+  animation-delay: 300ms;
+}
+.character-stage.error .orbit {
+  background: #f3e7e2;
+}
+.character-stage.error .character {
+  animation: none;
+}
+.character-stage.connecting .character {
+  opacity: 0.85;
+}
+.waveform.waveform-meter {
+  height: 48px;
+  gap: 5px;
+}
+.waveform.waveform-meter i {
+  width: 4px;
+  transform: none;
+  animation: none;
+  transition:
+    height 80ms linear,
+    background-color 200ms;
+  background: #b6a9df;
+}
+.waveform.waveform-meter.listening i {
+  background: #4f927e;
+}
+.waveform.waveform-meter.speaking i {
+  background: var(--action);
+}
+.waveform-caption {
+  display: block;
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 20px;
+  margin-top: 2px;
+}
+.conversation .reply {
+  background: #fffdf9;
+  border: 1px solid #e7e0f0;
+  border-radius: 20px 20px 20px 6px;
+  margin: 20px 0 14px;
+  min-height: 78px;
+  padding: 18px;
+  color: var(--ink);
+}
+.conversation .state-label {
+  margin: 12px 0 22px;
+}
+.microphone {
+  transition:
+    background-color 180ms,
+    transform 150ms,
+    box-shadow 180ms;
+}
+.microphone:not(:disabled):hover {
+  background: #5b43aa;
+  transform: translateY(-2px);
+}
+.microphone:not(:disabled):active {
+  transform: scale(0.96);
+}
+.microphone:disabled {
+  cursor: not-allowed;
+}
+@keyframes lumi-blink {
+  0%,
+  43%,
+  46%,
+  100% {
+    transform: scaleY(1);
+  }
+  44.5% {
+    transform: scaleY(0.13);
+  }
+}
+@keyframes lumi-ponder {
+  0%,
+  100% {
+    transform: rotate(3deg) translateY(-2px);
+  }
+  50% {
+    transform: rotate(5deg) translateY(-5px);
+  }
+}
+@keyframes lumi-glow {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.15);
+  }
+}
+@keyframes lumi-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .character-stage .character,
+  .character-stage .orbit,
+  .character-stage .ground,
+  .character-stage .listening-ring {
+    transform: none !important;
+  }
+  .thinking .chest-glow {
+    opacity: 0.45;
+  }
+  .waveform.waveform-meter i {
+    transition: none;
+  }
+}
