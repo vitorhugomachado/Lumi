@@ -17,7 +17,7 @@ Validação: `npm run lint`, `npm test` e `npm run build`.
 
 O serviço Lumi usa o PostgreSQL do mesmo projeto pela rede privada. Na versão hospedada, responsáveis criam uma conta com e-mail e senha; perfil e participação ficam associados à conta, com cookies HttpOnly e sessões armazenadas pelo hash. O modo local sem `DATABASE_URL` continua usando o navegador. Dados locais antigos não são enviados automaticamente.
 
-Configure `DATABASE_URL` como `${{Postgres.DATABASE_URL}}`, `APP_ORIGIN` com a origem HTTPS exata sem barra final, `NEXT_PUBLIC_VOICE_PROVIDER=gemini`, `GEMINI_API_KEY` somente no servidor e `PORT=8080`. O `railway.json` executa `npm run db:migrate` antes da implantação e verifica `/api/health`. As migrações são transacionais e aditivas; não apagam tabelas existentes. Nunca execute migrações com uma URL de outro projeto.
+Configure `DATABASE_URL` como `${{Postgres.DATABASE_URL}}`, `APP_ORIGIN` com a origem HTTPS exata sem barra final, `NEXT_PUBLIC_VOICE_PROVIDER=gemini`, `GEMINI_API_KEY` somente no servidor e `PORT=8080`. O serviço Lumi está configurado no Railway para executar `npm run db:migrate` antes da implantação e verificar `/api/health/`. As migrações são transacionais e aditivas; não apagam tabelas existentes. Nunca execute migrações com uma URL de outro projeto.
 
 A conversa Gemini hospedada exige conta e origem autorizada. A API limita tentativas e consultas são parametrizadas e filtradas pela conta autenticada. Há um perfil e até 500 atividades recentes por conta, além de até cinco sessões ativas de sete dias. Áudio, vídeo e transcrições não são persistidos no PostgreSQL.
 

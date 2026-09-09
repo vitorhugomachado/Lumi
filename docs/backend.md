@@ -18,6 +18,8 @@ Contas possuem hashes scrypt com sal aleatório. Cookies HttpOnly, SameSite=Lax 
 
 ## Migrações e operação
 
+O serviço Lumi no Railway tem Pre-deploy Command `npm run db:migrate`, Start Command `npm start`, Healthcheck Path `/api/health/` e timeout de 120 segundos. Essas opções foram aplicadas diretamente ao serviço pela CLI/API. Em outro ambiente, configure-as antes de publicar. Novos serviços Railway não leem o antigo railway.json; ele não é usado aqui.
+
 `npm run db:migrate`: executa migrations/*.sql em transação, usando lock para impedir concorrência. A tabela lumi_migrations registra versões aplicadas. Use novas migrações para mudanças futuras. Não editar uma migração já aplicada.
 
 `npm start`: escuta em 0.0.0.0 e PORT no Railway; em loopback fora do Railway. O pool usa no máximo cinco conexões por processo. Credenciais nunca ficam no código ou no cliente. DATABASE_URL é uma referência ao serviço Postgres existente, sem abrir acesso TCP público ao banco.
