@@ -164,7 +164,7 @@ function Conversation() {
       <p className="fine">
         {isMock
           ? "Nesta demonstração, o microfone não é acessado."
-          : "Use sua própria voz, sem crianças nesta etapa. O perfil continua neste navegador."}
+          : "Use sua própria voz, sem crianças nesta etapa. O perfil não é enviado na conversa."}
         <br />
         {isMock
           ? "As respostas aparecem em texto."

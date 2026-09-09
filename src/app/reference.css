@@ -1069,3 +1069,5 @@ button:hover {
   height: auto;
   display: block;
 }
+
+.account-mascot {height:180px!important;object-fit:contain;} .account-screen form {display:flex;flex-direction:column;gap:12px;} .account-screen form label {margin:0;} .account-screen form input {width:100%;} .account-screen .voice-consent input {width:22px;}

@@ -1,4 +1,5 @@
 "use client";
+import { cloud, logoutCloud } from "@/lib/cloud";
 import { Icon } from "./Icon";
 import Image from "next/image";
 import Link from "next/link";
@@ -537,11 +538,11 @@ function Practice({
         resources.current.frame = requestAnimationFrame(tick);
       };
       tick();
-      resources.current.timer = setTimeout(() => {
+      resources.current.timer = setTimeout(async () => {
         cleanup();
         setLevel(0);
         try {
-          recordActivity(category, item[1], 8);
+          await recordActivity(category, item[1], 8);
         } catch {
           setError(
             "A atividade terminou, mas o navegador não permitiu salvar o progresso.",
@@ -784,9 +785,9 @@ function Stories() {
           </button>
           <button
             className="button secondary"
-            onClick={() => {
+            onClick={async () => {
               try {
-                recordActivity("historias", tales[selected].title, 0);
+                await recordActivity("historias", tales[selected].title, 0);
               } catch {}
               speech.stop();
               setSelected(null);
@@ -1015,7 +1016,10 @@ function Progress({ family = false }: { family?: boolean }) {
         </div>
       </div>
       <p className="fine">
-        Registros deste aparelho. Não medimos fala ou desenvolvimento.
+        {cloud.enabled
+          ? "Registros da sua conta."
+          : "Registros deste aparelho."}{" "}
+        Não medimos fala ou desenvolvimento.
       </p>
       <Link className="button primary" href="/inicio">
         Continuar explorando
@@ -1177,7 +1181,7 @@ function Settings({ parents }: { parents: boolean }) {
                 className="button secondary"
                 onClick={() => setMessage("confirm-delete")}
               >
-                Apagar dados deste aparelho
+                Apagar perfil e progresso
               </button>
               {message === "confirm-delete" && (
                 <>
@@ -1186,10 +1190,10 @@ function Settings({ parents }: { parents: boolean }) {
                   </p>
                   <button
                     className="button primary"
-                    onClick={() => {
+                    onClick={async () => {
                       try {
-                        clearProfile();
-                        clearActivities();
+                        await clearProfile();
+                        await clearActivities();
                         setMessage("Perfil e progresso apagados.");
                       } catch {
                         setMessage("Não foi possível apagar os dados.");
@@ -1234,9 +1238,14 @@ function Settings({ parents }: { parents: boolean }) {
       )}
       <button
         className="button primary bottom-action"
-        onClick={() => {
-          access.lock();
-          router.push("/");
+        onClick={async () => {
+          try {
+            await logoutCloud();
+            access.lock();
+            router.push("/");
+          } catch {
+            setMessage("Não foi possível sair. Tente novamente.");
+          }
         }}
       >
         Sair

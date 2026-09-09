@@ -1,6 +1,7 @@
 "use client";
 import { useSyncExternalStore, useState } from "react";
 import { useRouter } from "next/navigation";
+import { cloud } from "@/lib/cloud";
 import { INTERESTS } from "@/lib/child/profile";
 import { loadProfile, saveProfile } from "@/lib/child/storage";
 const icons = ["🐾", "♫", "⚽", "🚙", "🦕", "🍌", "🌱", "📖"];
@@ -39,17 +40,19 @@ function ProfileForm() {
     initial.profile?.knownWords.join(", ") ?? "",
   );
   const [error, setError] = useState(initial.error);
+  const [saving, setSaving] = useState(false);
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         setError("");
         if (!interests.length) {
           setError("Escolha pelo menos um interesse.");
           return;
         }
+        setSaving(true);
         try {
-          saveProfile({
+          await saveProfile({
             name: name.trim(),
             ageMonths: age,
             interests,
@@ -59,10 +62,14 @@ function ProfileForm() {
               .filter(Boolean),
           });
           router.push("/inicio");
-        } catch {
+        } catch (error) {
           setError(
-            "Não foi possível salvar. Confira os dados e permita o armazenamento local do navegador.",
+            error instanceof Error
+              ? error.message
+              : "Não foi possível salvar. Tente novamente.",
           );
+        } finally {
+          setSaving(false);
         }
       }}
     >
@@ -128,14 +135,19 @@ function ProfileForm() {
         value={words}
         onChange={(e) => setWords(e.target.value)}
       />
-      <p className="hint privacy">♡ O perfil fica somente neste navegador.</p>
+      <p className="hint privacy">
+        ♡{" "}
+        {cloud.enabled
+          ? "O perfil será salvo na sua conta."
+          : "O perfil fica somente neste navegador."}
+      </p>
       {error && (
         <p role="alert" className="error-box">
           {error}
         </p>
       )}
-      <button className="button primary" type="submit">
-        Continuar <span aria-hidden="true">→</span>
+      <button className="button primary" type="submit" disabled={saving}>
+        {saving ? "Salvando…" : "Continuar"} <span aria-hidden="true">→</span>
       </button>
     </form>
   );

@@ -20,18 +20,22 @@ export function createTokenHandler(
     }),
   env: () => NodeJS.ProcessEnv = () => process.env,
   now: () => number = Date.now,
+  authorize?: (request: Request) => Promise<Response | null>,
 ) {
   let windowStart = 0;
   let count = 0;
   return async function POST(request: Request) {
-    // No application authentication is part of Space 2. This endpoint therefore
-    // fails closed outside loopback, and dev/start bind only to 127.0.0.1.
+    // Local mode stays restricted to loopback. Hosted mode supplies an
+    // authorization callback that checks the origin, account and database quota.
     const url = new URL(request.url);
     // Next can normalize request.url to localhost even when the browser uses
     // 127.0.0.1. Validate the actual Host, never forwarded proxy headers.
     const host = request.headers.get("host") ?? url.host;
     const local = /^(localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/.test(host);
-    if (
+    if (authorize) {
+      const denied = await authorize(request);
+      if (denied) return denied;
+    } else if (
       !local ||
       request.headers.get("origin") !== `${url.protocol}//${host}` ||
       request.headers.get("sec-fetch-site") === "cross-site"

@@ -13,9 +13,15 @@ Repositório: https://github.com/vitorhugomachado/Lumi
 
 Validação: `npm run lint`, `npm test` e `npm run build`.
 
-## Próxima etapa: Railway
+## Backend PostgreSQL no Railway
 
-O banco ainda não foi criado ou integrado. Perfil e participação usam armazenamento local do navegador. A aplicação precisa de um servidor Next.js para o endpoint Gemini; o GitHub armazena o código. A publicação no Railway exigirá configurar as variáveis no serviço, ajustar o host de execução e implementar autenticação/controle de origem no emissor de tokens, que atualmente aceita somente acesso local. Nenhuma chave está incluída neste repositório.
+O serviço Lumi usa o PostgreSQL do mesmo projeto pela rede privada. Na versão hospedada, responsáveis criam uma conta com e-mail e senha; perfil e participação ficam associados à conta, com cookies HttpOnly e sessões armazenadas pelo hash. O modo local sem `DATABASE_URL` continua usando o navegador. Dados locais antigos não são enviados automaticamente.
+
+Configure `DATABASE_URL` como `${{Postgres.DATABASE_URL}}`, `APP_ORIGIN` com a origem HTTPS exata sem barra final, `NEXT_PUBLIC_VOICE_PROVIDER=gemini`, `GEMINI_API_KEY` somente no servidor e `PORT=8080`. O `railway.json` executa `npm run db:migrate` antes da implantação e verifica `/api/health`. As migrações são transacionais e aditivas; não apagam tabelas existentes. Nunca execute migrações com uma URL de outro projeto.
+
+A conversa Gemini hospedada exige conta e origem autorizada. A API limita tentativas e consultas são parametrizadas e filtradas pela conta autenticada. Há um perfil e até 500 atividades recentes por conta, além de até cinco sessões ativas de sete dias. Áudio, vídeo e transcrições não são persistidos no PostgreSQL.
+
+Veja [docs/backend.md](docs/backend.md) para endpoints, testes e limitações (incluindo ausência de recuperação/verificação por e-mail nesta versão).
 
 As novas telas e limitações estão descritas em [docs/reference-ui.md](docs/reference-ui.md). As seções abaixo registram as etapas anteriores.
 
