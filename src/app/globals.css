@@ -1,4 +1,24 @@
 @import "tailwindcss";
+
+.voice-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 400;
+  background: #eae4ff;
+  padding: 16px;
+  border-radius: 16px;
+}
+.voice-consent input {
+  width: 22px;
+  height: 22px;
+  min-height: 22px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  accent-color: #6950be;
+}
 @theme inline {
   --color-lavender: #8b73e6;
   --color-cream: #fff8ee;

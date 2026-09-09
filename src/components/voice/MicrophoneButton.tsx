@@ -1,16 +1,25 @@
 export function MicrophoneButton({
   active,
   onClick,
+  mock = true,
+  disabled = false,
 }: {
   active: boolean;
   onClick: () => void;
+  mock?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       className="microphone"
       onClick={onClick}
+      disabled={disabled}
       aria-label={
-        active ? "Parar conversa simulada" : "Conversar com Lumi (simulação)"
+        active
+          ? "Parar conversa"
+          : mock
+            ? "Conversar com Lumi (simulação)"
+            : "Conversar com Lumi por voz"
       }
     >
       {active ? (

@@ -20,7 +20,12 @@ export default function Welcome() {
           Começar <span aria-hidden="true">↗</span>
         </Link>
         <p className="fine">Feito para explorar juntos, com um responsável.</p>
-        <div className="badge">✦ Protótipo com conversa simulada</div>
+        <div className="badge">
+          ✦{" "}
+          {process.env.NEXT_PUBLIC_VOICE_PROVIDER === "gemini"
+            ? "Conversa por voz · teste com adulto"
+            : "Protótipo com conversa simulada"}
+        </div>
       </div>
     </main>
   );
