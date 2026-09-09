@@ -1,3 +1,9 @@
+import type { ChildProfile } from "../child/profile";
+import {
+  ProfilePayloadError,
+  profileSnapshot,
+  readLocalVoiceProfile,
+} from "./profileContext";
 import { GoogleGenAI } from "@google/genai";
 import {
   GEMINI_API_VERSION,
@@ -21,6 +27,9 @@ export function createTokenHandler(
   env: () => NodeJS.ProcessEnv = () => process.env,
   now: () => number = Date.now,
   authorize?: (request: Request) => Promise<Response | null>,
+  resolveProfile: (
+    request: Request,
+  ) => Promise<ChildProfile | null> = readLocalVoiceProfile,
 ) {
   let windowStart = 0;
   let count = 0;
@@ -48,6 +57,14 @@ export function createTokenHandler(
       request.headers.get("content-type")?.split(";")[0] !== "application/json"
     )
       return reply(415, "Formato de solicitação inválido.");
+    let profile: ChildProfile | null;
+    try {
+      profile = profileSnapshot(await resolveProfile(request));
+    } catch (error) {
+      if (error instanceof ProfilePayloadError)
+        return reply(error.status, error.message);
+      throw error;
+    }
     const config = env();
     if (!config.GEMINI_API_KEY)
       return reply(
@@ -68,7 +85,10 @@ export function createTokenHandler(
           uses: 1,
           expireTime: expiresAt,
           newSessionExpireTime: new Date(now() + 60_000).toISOString(),
-          liveConnectConstraints: { model: GEMINI_MODEL, config: liveConfig() },
+          liveConnectConstraints: {
+            model: GEMINI_MODEL,
+            config: liveConfig(profile),
+          },
         },
       });
       if (!token.name)
@@ -82,6 +102,7 @@ export function createTokenHandler(
           model: GEMINI_MODEL,
           expiresAt,
           sessionSeconds: SESSION_SECONDS,
+          profile,
         },
         { headers },
       );

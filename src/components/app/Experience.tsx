@@ -1148,7 +1148,8 @@ function Settings({ parents }: { parents: boolean }) {
                 O perfil é opcional. No site, perfil e participação ficam salvos
                 no servidor, vinculados a este navegador. Exercícios usam o
                 microfone sem gravar. Na conversa ao vivo, sua voz é enviada ao
-                Google Gemini ao tocar no microfone.
+                Google Gemini ao tocar no microfone, junto com nome, idade,
+                interesses e palavras conhecidas do perfil preenchido.
               </p>
               <button
                 className="button secondary"
@@ -1192,7 +1193,7 @@ function Settings({ parents }: { parents: boolean }) {
                     : detail === "Conectar com fonoaudiólogo"
                       ? "Esta versão não possui conexão com profissionais. O Lumi não oferece terapia, diagnóstico ou avaliação."
                       : detail === "Conteúdo personalizado"
-                        ? "Escolha uma categoria no início ou edite os interesses no perfil. O perfil não é enviado ao Gemini."
+                        ? "Escolha uma categoria no início ou edite os interesses no perfil. Ao iniciar a conversa, o Lumi usa o perfil salvo para adaptar suas falas."
                         : detail === "Dicas e orientações"
                           ? "Escute com calma, dê tempo para responder e valorize a participação. Não é preciso corrigir nem cobrar acertos."
                           : "Lumi · Sua amiguinha de luz. Brincadeiras inspiradas em pequenas descobertas."}

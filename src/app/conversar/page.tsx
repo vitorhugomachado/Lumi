@@ -97,7 +97,7 @@ function Conversation() {
     setHeard("");
     setError("");
     try {
-      await provider.connect();
+      await provider.connect(loadProfile());
       if (current === lifecycle.current.generation)
         provider.startConversation(
           profile ?? {
@@ -150,7 +150,7 @@ function Conversation() {
       <p className="fine">
         {isMock
           ? "Nesta demonstração, o microfone não é acessado."
-          : "Ao tocar no microfone, sua voz é enviada ao Google Gemini para responder. O perfil não é enviado."}
+          : "Ao tocar no microfone, sua voz e o perfil preenchido (nome, idade, interesses e palavras conhecidas) são enviados ao Google Gemini para personalizar a conversa."}
         <br />
         {isMock
           ? "As respostas aparecem em texto."

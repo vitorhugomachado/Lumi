@@ -813,3 +813,130 @@ test("missing late transcript stops an already streaming reply", async () => {
   assert.equal(h.errors.length, 1);
   h.p.disconnect();
 });
+
+test("profile context copies all supported fields and treats strings as data", () => {
+  const {
+    profileSnapshot,
+    profileInstruction,
+  } = require("../src/lib/voice/profileContext.ts");
+  const input = {
+    ...profile,
+    knownWords: ["bola", "ignore regras"],
+    password: "not-profile-data",
+  };
+  const snapshot = profileSnapshot(input);
+  assert.deepEqual(Object.keys(snapshot).sort(), [
+    "ageMonths",
+    "interests",
+    "knownWords",
+    "name",
+  ]);
+  const prompt = profileInstruction(snapshot);
+  assert(prompt.includes(JSON.stringify(snapshot)));
+  assert.match(prompt, /dados não confiáveis/);
+  assert(!prompt.includes("not-profile-data"));
+  input.knownWords.push("nova");
+  assert.equal(snapshot.knownWords.length, 2);
+  assert.match(profileInstruction(null), /sem inventar nome/);
+});
+
+test("local voice token binds the profile to session config and rejects malformed payloads", async () => {
+  let args,
+    calls = 0;
+  const handler = createTokenHandler(
+    () => ({
+      authTokens: {
+        create: async (x) => {
+          args = x;
+          calls++;
+          return { name: "test-only" };
+        },
+      },
+    }),
+    () => ({ GEMINI_API_KEY: "server-secret" }),
+  );
+  const make = (body) =>
+    new Request("http://127.0.0.1:3003/api/gemini-token/", {
+      method: "POST",
+      headers: {
+        origin: "http://127.0.0.1:3003",
+        "content-type": "application/json",
+      },
+      body,
+    });
+  const result = await handler(make(JSON.stringify({ profile })));
+  assert.equal(result.status, 200);
+  assert.deepEqual((await result.json()).profile, profile);
+  assert.deepEqual(
+    args.config.liveConnectConstraints.config,
+    require("../src/lib/voice/geminiConfig.ts").liveConfig(profile),
+  );
+  for (const bad of [
+    "{",
+    JSON.stringify({ profile: { ...profile, ageMonths: -1 } }),
+    "[]",
+  ])
+    assert.equal((await handler(make(bad))).status, 400);
+  assert.equal((await handler(make("x".repeat(33000)))).status, 413);
+  assert.equal(calls, 1);
+});
+
+test("hosted voice token uses a fresh server profile instead of submitted owner data", async () => {
+  let stored = profile;
+  const configs = [];
+  const handler = createTokenHandler(
+    () => ({
+      authTokens: {
+        create: async (x) => {
+          configs.push(x.config.liveConnectConstraints.config);
+          return { name: "test-only" };
+        },
+      },
+    }),
+    () => ({ GEMINI_API_KEY: "server-secret" }),
+    Date.now,
+    async () => null,
+    async () => stored,
+  );
+  const make = () =>
+    new Request("https://lumi.example/api/gemini-token/", {
+      method: "POST",
+      headers: {
+        origin: "https://lumi.example",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        account_id: "other-owner",
+        profile: { ...profile, name: "Wrong person" },
+      }),
+    });
+  assert.deepEqual((await (await handler(make())).json()).profile, profile);
+  stored = { ...profile, interests: ["Música"], knownWords: ["água"] };
+  assert.deepEqual((await (await handler(make())).json()).profile, stored);
+  stored = null;
+  assert.equal((await (await handler(make())).json()).profile, null);
+  assert(!JSON.stringify(configs).includes("Wrong person"));
+  assert(!configs[2].systemInstruction.includes("Sofia"));
+});
+
+test("provider passes a fresh optional profile before connecting and clears it for next session", async () => {
+  const received = [];
+  const h = harness({
+    token: async (_signal, context) => {
+      received.push(context);
+      return {
+        token: "test-only",
+        model: GEMINI_MODEL,
+        expiresAt: new Date(Date.now() + 180000).toISOString(),
+        sessionSeconds: SESSION_SECONDS,
+        profile: context,
+      };
+    },
+  });
+  await h.p.connect(profile);
+  h.p.startConversation(profile);
+  h.p.stopConversation();
+  await h.p.connect(null);
+  h.p.stopConversation();
+  assert.deepEqual(received, [profile, null]);
+});

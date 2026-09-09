@@ -4,6 +4,10 @@ Aplicativo Next.js com interface baseada na referência visual, atividades locai
 
 Repositório: https://github.com/vitorhugomachado/Lumi
 
+## Perfil individual na voz
+
+Lumi usa nome, idade, interesses e palavras conhecidas do perfil salvo para personalizar cada nova conversa. No Railway a ficha é lida no Postgres pelo usuário da sessão; localmente vem do navegador. Perfil continua opcional. Alterações entram na próxima conversa. Isso fornece contexto ao Gemini, sem treinar o modelo ou salvar memórias de conversas. Veja [docs/voice-profile.md](docs/voice-profile.md); esta seção substitui as notas históricas sobre perfil não enviado.
+
 ## Conversa ao vivo
 
 Áudio em streaming, microfone contínuo, interrupções durante a fala e comentários naturais sem questionário. Os filtros acompanham a transcrição durante a reprodução; não aguardam a resposta inteira. Veja [docs/live-conversation.md](docs/live-conversation.md). Esta seção substitui o comportamento de buffer descrito nas etapas históricas abaixo.

@@ -98,6 +98,40 @@ async function main() {
       (await request("/api/profile", "GET", undefined, b)).data.profile,
       null,
     );
+    if (process.env.TEST_PROFILE_VOICE === "1") {
+      const forged = {
+        profile: {
+          name: "Wrong person",
+          ageMonths: 48,
+          interests: ["Música"],
+          knownWords: [],
+        },
+        account_id: "other-user",
+      };
+      const aVoice = await request("/api/gemini-token", "POST", forged, a);
+      assert.equal(aVoice.status, 200);
+      assert.equal(aVoice.data.profile.name, "Teste");
+      assert.deepEqual(aVoice.data.profile.interests, ["Animais"]);
+      const bVoice = await request("/api/gemini-token", "POST", forged, b);
+      assert.equal(bVoice.status, 200);
+      assert.equal(bVoice.data.profile, null);
+      const updated = {
+        name: "Teste",
+        ageMonths: 36,
+        interests: ["Música"],
+        knownWords: ["água", "bola"],
+      };
+      assert.equal(
+        (await request("/api/profile", "PUT", updated, a)).status,
+        200,
+      );
+      const updatedVoice = await request("/api/gemini-token", "POST", {}, a);
+      assert.equal(updatedVoice.status, 200);
+      assert.deepEqual(updatedVoice.data.profile, updated);
+      console.log(
+        "Voice profile verified: owner isolation, forged payload ignored, all profile fields refreshed.",
+      );
+    }
     const activity = {
       id: randomUUID(),
       category: "sons",

@@ -11,7 +11,7 @@ import {
   type LiveServerMessage,
   type Session,
 } from "@google/genai";
-import type { ChildProfile } from "../child/profile";
+import { isChildProfile, type ChildProfile } from "../child/profile";
 import type { Transcript, VoiceProvider, VoiceState } from "./VoiceProvider";
 import { BrowserAudio, type AudioIO } from "./audio/BrowserAudio";
 import { AudioLevelStore, meterLevel, type AudioLevels } from "./audio/levels";
@@ -28,6 +28,7 @@ type Token = {
   model: string;
   expiresAt: string;
   sessionSeconds: number;
+  profile?: ChildProfile | null;
 };
 type Callbacks = {
   onmessage: (message: LiveServerMessage) => void;
@@ -36,16 +37,16 @@ type Callbacks = {
 };
 export type GeminiDependencies = {
   audio: () => AudioIO;
-  token: (signal: AbortSignal) => Promise<Token>;
+  token: (signal: AbortSignal, profile?: ChildProfile | null) => Promise<Token>;
   session: (token: Token, callbacks: Callbacks) => Promise<LiveSession>;
 };
 const defaults: GeminiDependencies = {
   audio: () => new BrowserAudio(),
-  async token(signal) {
+  async token(signal, profile) {
     const response = await fetch("/api/gemini-token/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: "{}",
+      body: JSON.stringify({ profile: profile ?? null }),
       cache: "no-store",
       signal,
     });
@@ -60,7 +61,8 @@ const defaults: GeminiDependencies = {
       !data.token ||
       data.model !== GEMINI_MODEL ||
       !Number.isFinite(Date.parse(data.expiresAt)) ||
-      data.sessionSeconds !== SESSION_SECONDS
+      data.sessionSeconds !== SESSION_SECONDS ||
+      (data.profile != null && !isChildProfile(data.profile))
     )
       throw new Error("Credencial de voz inválida.");
     return data as Token;
@@ -72,7 +74,7 @@ const defaults: GeminiDependencies = {
     });
     return ai.live.connect({
       model: token.model,
-      config: liveConfig(),
+      config: liveConfig(token.profile ?? null),
       callbacks,
     });
   },
@@ -118,7 +120,7 @@ export class GeminiLiveProvider implements VoiceProvider {
     this.errors.forEach((fn) => fn(error));
   }
 
-  async connect() {
+  async connect(profile: ChildProfile | null = null) {
     this.release();
     const controller = new AbortController();
     this.controller = controller;
@@ -175,7 +177,7 @@ export class GeminiLiveProvider implements VoiceProvider {
           );
       }, 20_000);
       phase = "token";
-      const token = await this.deps.token(controller.signal);
+      const token = await this.deps.token(controller.signal, profile);
       if (!valid()) return;
       phase = "session";
       const session = await this.deps.session(token, {
@@ -236,7 +238,7 @@ export class GeminiLiveProvider implements VoiceProvider {
   }
 
   startConversation(_profile: ChildProfile) {
-    // Intentionally keeps the stored child profile off the network in this stage.
+    // Profile was attached to the constrained session during connect().
     void _profile;
     if (!this.session || !this.audio) return;
     this.active = true;
@@ -247,7 +249,7 @@ export class GeminiLiveProvider implements VoiceProvider {
     this.emit("thinking");
     try {
       this.session.sendRealtimeInput({
-        text: "Cumprimente com um oi acolhedor e um comentário brincalhão bem curto. Sem pergunta de abertura. Depois acompanhe o que eu disser numa conversa natural.",
+        text: "Cumprimente com um oi acolhedor e um comentário brincalhão bem curto, usando naturalmente o perfil se ele estiver disponível. Sem pergunta de abertura. Depois acompanhe o que eu disser numa conversa natural.",
       });
     } catch {
       this.fail(

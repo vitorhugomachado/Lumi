@@ -40,7 +40,17 @@ async function main() {
     const guest = await api("/api/guest/", {});
     cookie = guest.headers.get("set-cookie")?.split(";")[0];
     assert(cookie);
+    const testProfile = {
+      name: "Sofia",
+      ageMonths: 24,
+      interests: ["Animais"],
+      knownWords: ["gato", "bola"],
+    };
+    if (process.env.TEST_PROFILE_VOICE === "1")
+      await api("/api/profile/", testProfile, "PUT");
     const token = await (await api("/api/gemini-token/", {})).json();
+    if (process.env.TEST_PROFILE_VOICE === "1")
+      assert.deepEqual(token.profile, testProfile);
     const ai = new GoogleGenAI({
       apiKey: token.token,
       httpOptions: { apiVersion: GEMINI_API_VERSION },
@@ -57,7 +67,7 @@ async function main() {
     timer = setTimeout(() => reject(new Error("Live test timed out.")), 45000);
     session = await ai.live.connect({
       model: token.model,
-      config: liveConfig(),
+      config: liveConfig(token.profile ?? null),
       callbacks: {
         onerror: () => reject(new Error("Live connection failed.")),
         onclose: () => {

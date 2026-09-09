@@ -141,13 +141,19 @@ function ProfileForm() {
           ? "O perfil será salvo no servidor e vinculado a este navegador."
           : "O perfil fica somente neste navegador."}
       </p>
+      <p className="hint">
+        Ao iniciar a conversa por voz, nome, idade, interesses e palavras
+        conhecidas são enviados ao Google Gemini para personalizar as falas.
+        Alterações valem na próxima conversa.
+      </p>
       {error && (
         <p role="alert" className="error-box">
           {error}
         </p>
       )}
       <button className="button primary" type="submit" disabled={saving}>
-        {saving ? "Salvando…" : "Salvar perfil"} <span aria-hidden="true">→</span>
+        {saving ? "Salvando…" : "Salvar perfil"}{" "}
+        <span aria-hidden="true">→</span>
       </button>
     </form>
   );
