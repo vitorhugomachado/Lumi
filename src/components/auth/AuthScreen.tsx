@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Mascot } from "@/components/app/Mascot";
 import { cloud, hydrateCloud } from "@/lib/cloud";
 function FieldIcon({ kind }: { kind: "email" | "name" | "lock" | "eye" }) {
@@ -47,7 +47,6 @@ export function AuthScreen({ register = false }: { register?: boolean }) {
   const [confirmationShown, setConfirmationShown] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const recovery = useRef<HTMLDialogElement>(null);
   return (
     <main
       className={`auth-screen ${register ? "auth-register" : "auth-login"}`}
@@ -308,13 +307,9 @@ export function AuthScreen({ register = false }: { register?: boolean }) {
                     <input name="remember" type="checkbox" defaultChecked />
                     <span>Lembrar de mim</span>
                   </label>
-                  <button
-                    className="auth-text"
-                    type="button"
-                    onClick={() => recovery.current?.showModal()}
-                  >
+                  <Link className="auth-text" href="/recuperar-senha">
                     Esqueci minha senha?
-                  </button>
+                  </Link>
                 </>
               )}
             </div>
@@ -387,19 +382,6 @@ export function AuthScreen({ register = false }: { register?: boolean }) {
           </p>
         )}
       </section>
-      <dialog ref={recovery} className="auth-dialog">
-        <h2>Recuperar senha</h2>
-        <p>
-          A recuperação por e-mail ainda não está disponível. Você pode
-          continuar sem conta; o acesso ao perfil da conta exige sua senha.
-        </p>
-        <button
-          className="auth-submit"
-          onClick={() => recovery.current?.close()}
-        >
-          Entendi
-        </button>
-      </dialog>
     </main>
   );
 }

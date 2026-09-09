@@ -1,3 +1,4 @@
+global.sessionStorage = { getItem: () => null };
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
@@ -18,6 +19,34 @@ const {
   recordActivity,
   clearActivities,
 } = require("../src/lib/activity.ts");
+const { loadProfile, saveProfile } = require("../src/lib/child/storage.ts");
+test("local children preserve legacy data and keep profile/progress separate", (t) => {
+  const data = storage(t);
+  let selected = "default";
+  global.sessionStorage = { getItem: () => selected };
+  t.after(() => {
+    global.sessionStorage = { getItem: () => null };
+  });
+  const sofia = {
+    name: "Sofia",
+    ageMonths: 24,
+    interests: ["Animais"],
+    knownWords: [],
+  };
+  saveProfile(sofia);
+  recordActivity("sons", "A", 8);
+  data.set("lumi.children.v1", JSON.stringify(["default", "second"]));
+  selected = "second";
+  assert.equal(loadProfile(), null);
+  assert.deepEqual(readActivities(), []);
+  saveProfile({ ...sofia, name: "Lucas" });
+  recordActivity("sons", "B", 8);
+  assert.equal(readActivities()[0].word, "B");
+  clearActivities();
+  selected = "default";
+  assert.deepEqual(loadProfile(), sofia);
+  assert.equal(readActivities()[0].word, "A");
+});
 function storage(t) {
   const data = new Map();
   Object.defineProperty(globalThis, "localStorage", {

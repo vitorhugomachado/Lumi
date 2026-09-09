@@ -1,4 +1,5 @@
 "use client";
+import { addChild, selectChild } from "@/lib/child/family";
 import { useSyncExternalStore, useState } from "react";
 import { useRouter } from "next/navigation";
 import { cloud } from "@/lib/cloud";
@@ -6,23 +7,23 @@ import { INTERESTS } from "@/lib/child/profile";
 import { loadProfile, saveProfile } from "@/lib/child/storage";
 const icons = ["🐾", "♫", "⚽", "🚙", "🦕", "🍌", "🌱", "📖"];
 const subscribe = () => () => {};
-export function ChildProfileForm() {
+export function ChildProfileForm({ create = false }: { create?: boolean }) {
   const ready = useSyncExternalStore(
     subscribe,
     () => true,
     () => false,
   );
   return ready ? (
-    <ProfileForm />
+    <ProfileForm create={create} />
   ) : (
     <p role="status">Carregando perfil local...</p>
   );
 }
-function ProfileForm() {
+function ProfileForm({ create }: { create: boolean }) {
   const router = useRouter();
   const [initial] = useState(() => {
     try {
-      return { profile: loadProfile(), error: "" };
+      return { profile: create ? null : loadProfile(), error: "" };
     } catch {
       return {
         profile: null,
@@ -52,7 +53,7 @@ function ProfileForm() {
         }
         setSaving(true);
         try {
-          await saveProfile({
+          const profile = {
             name: name.trim(),
             ageMonths: age,
             interests,
@@ -60,8 +61,12 @@ function ProfileForm() {
               .split(",")
               .map((w) => w.trim())
               .filter(Boolean),
-          });
-          router.push("/inicio");
+          };
+          if (create) selectChild(await addChild(profile));
+          else {
+            await saveProfile(profile);
+            router.push("/inicio");
+          }
         } catch (error) {
           setError(
             error instanceof Error

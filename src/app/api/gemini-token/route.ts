@@ -1,3 +1,4 @@
+import { childId } from "@/lib/server/children";
 import { db } from "@/lib/server/db";
 import { profileSnapshot } from "@/lib/voice/profileContext";
 import { createTokenHandler } from "@/lib/voice/tokenService";
@@ -19,11 +20,12 @@ const authenticated = createTokenHandler(
     // Ignore submitted profile/owner IDs in hosted mode. The cookie is the owner.
     await body(request);
     const user = await account(request);
+    const id = await childId(request, user.id);
     const result = await db().query(
-      'SELECT name,age_months AS "ageMonths",interests,known_words AS "knownWords" FROM lumi_profiles WHERE account_id=$1',
-      [user.id],
+      'SELECT name,age_months AS "ageMonths",interests,known_words AS "knownWords" FROM lumi_profiles WHERE account_id=$1 AND id=$2',
+      [user.id, id],
     );
-    return profileSnapshot(result.rows[0] ?? null);
+    return profileSnapshot(result.rows[0]?.name ? result.rows[0] : null);
   },
 );
 export const POST = api(async (request) =>

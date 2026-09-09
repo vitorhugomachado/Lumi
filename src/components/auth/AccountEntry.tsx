@@ -10,10 +10,17 @@ export function AccountEntry() {
   const user = cloud.user;
   return (
     <section className="account-entry" aria-label="Sua conta">
+      <Link href="/perfis">Perfis das crianças →</Link>
       {user && !user.is_guest ? (
         <>
           <strong>Olá, {user.display_name || "família"}!</strong>
           <p>{user.email}</p>
+          <Link href="/trocar-senha">Trocar senha</Link>
+          {user.email_verified_at ? (
+            <p>E-mail confirmado ✓</p>
+          ) : (
+            <Link href="/verificar-email">Confirmar meu e-mail</Link>
+          )}
           <button
             disabled={pending}
             onClick={async () => {

@@ -1,3 +1,4 @@
+import { cloud } from "../cloud";
 import { ReplyBuffer } from "../safety/ReplyBuffer";
 import {
   flagContent,
@@ -45,7 +46,12 @@ const defaults: GeminiDependencies = {
   async token(signal, profile) {
     const response = await fetch("/api/gemini-token/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(cloud.enabled && cloud.childId
+          ? { "x-lumi-child": cloud.childId }
+          : {}),
+      },
       body: JSON.stringify({ profile: profile ?? null }),
       cache: "no-store",
       signal,

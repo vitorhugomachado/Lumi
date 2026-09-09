@@ -1,3 +1,4 @@
+global.sessionStorage = { getItem: () => null };
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { test } = require("node:test");
 const assert = require("node:assert/strict");

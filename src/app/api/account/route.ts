@@ -143,6 +143,13 @@ export const POST = api(async (request) => {
       is_guest: false,
     };
     await transaction(async (client) => {
+      // Serialize login with password changes so a stale password cannot mint a new session.
+      const current = await client.query(
+        "SELECT password_hash FROM lumi_accounts WHERE id=$1 FOR UPDATE",
+        [user.id],
+      );
+      if (current.rows[0]?.password_hash !== found.password_hash)
+        throw new ApiError(401, "Sua senha foi alterada. Entre novamente.");
       await client.query(
         "INSERT INTO lumi_sessions(token_hash,account_id,expires_at,remember_me) VALUES($1,$2,now()+$3*interval '1 second',$4)",
         [digest(token), user.id, duration, remember],

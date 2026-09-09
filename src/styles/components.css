@@ -629,3 +629,31 @@ input[type="checkbox"],
     transition: none !important;
   }
 }
+
+.family-profiles > p {
+  margin-block: 16px;
+}
+.family-child {
+  background: var(--lumi-surface);
+  border: 1px solid var(--lumi-border);
+  border-radius: 24px;
+  padding: 20px;
+  margin-block: 16px;
+  display: grid;
+  gap: 12px;
+}
+.family-child h2 {
+  font-size: 1.2rem;
+  overflow-wrap: anywhere;
+}
+.family-child p {
+  margin: 0;
+}
+.child-avatar {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  font-size: 32px;
+}

@@ -159,3 +159,7 @@ O consentimento atual é uma confirmação para testes com adultos, não um pare
 
 
 
+
+## Contas e perfis da família
+
+A área `/perfis/` separa crianças, progresso e contexto da voz. Troca de senha disponível; recuperação e confirmação de e-mail dependem de configurar Resend no servidor. Login Google/Apple ainda não ativados. Detalhes em [Contas e múltiplos perfis](docs/family-accounts.md).

@@ -1,9 +1,10 @@
+import { localKey } from "./selection";
 import { cloud, requestJson } from "../cloud";
 import { isChildProfile, type ChildProfile } from "./profile";
 const KEY = "lumi.profile.v1";
 export function loadProfile(): ChildProfile | null {
   if (cloud.enabled) return cloud.profile;
-  const raw = localStorage.getItem(KEY);
+  const raw = localStorage.getItem(localKey(KEY));
   if (!raw) return null;
   try {
     const value: unknown = JSON.parse(raw);
@@ -20,7 +21,7 @@ export function saveProfile(profile: ChildProfile) {
       if (version === cloud.version) cloud.profile = result.profile;
     });
   }
-  localStorage.setItem(KEY, JSON.stringify(profile));
+  localStorage.setItem(localKey(KEY), JSON.stringify(profile));
 }
 export function clearProfile() {
   if (cloud.enabled) {
@@ -29,5 +30,5 @@ export function clearProfile() {
       if (version === cloud.version) cloud.profile = null;
     });
   }
-  localStorage.removeItem(KEY);
+  localStorage.removeItem(localKey(KEY));
 }

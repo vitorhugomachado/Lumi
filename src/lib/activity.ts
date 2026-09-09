@@ -1,3 +1,4 @@
+import { localKey } from "./child/selection";
 import { cloud, requestJson } from "./cloud";
 export type Activity = {
   category: string;
@@ -9,7 +10,7 @@ const KEY = "lumi.activities.v1";
 export function readActivities(): Activity[] {
   if (cloud.enabled) return cloud.activities;
   try {
-    const data = JSON.parse(localStorage.getItem(KEY) || "[]");
+    const data = JSON.parse(localStorage.getItem(localKey(KEY)) || "[]");
     return Array.isArray(data)
       ? data
           .filter(
@@ -47,7 +48,7 @@ export function recordActivity(
   }
   const list = readActivities();
   list.push({ category, word, seconds, at: new Date().toISOString() });
-  localStorage.setItem(KEY, JSON.stringify(list.slice(-500)));
+  localStorage.setItem(localKey(KEY), JSON.stringify(list.slice(-500)));
 }
 export function clearActivities() {
   if (cloud.enabled) {
@@ -56,5 +57,5 @@ export function clearActivities() {
       if (version === cloud.version) cloud.activities = [];
     });
   }
-  localStorage.removeItem(KEY);
+  localStorage.removeItem(localKey(KEY));
 }
