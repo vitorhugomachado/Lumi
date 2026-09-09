@@ -58,7 +58,7 @@ function ProfileForm() {
               .map((w) => w.trim())
               .filter(Boolean),
           });
-          router.push("/conversar");
+          router.push("/inicio");
         } catch {
           setError(
             "Não foi possível salvar. Confira os dados e permita o armazenamento local do navegador.",

@@ -1,3 +1,30 @@
+# Lumi
+
+Aplicativo Next.js com interface baseada na referência visual, atividades locais, conversa Gemini Live e acesso para responsáveis.
+
+Repositório: https://github.com/vitorhugomachado/Lumi
+
+## Executar localmente
+
+1. `npm ci`
+2. Copie `.env.example` para `.env.local` e configure as variáveis no seu computador. Nunca envie chaves para o Git.
+3. `npm run dev -- --port 3003`
+4. Abra `http://127.0.0.1:3003/`.
+
+Validação: `npm run lint`, `npm test` e `npm run build`.
+
+## Próxima etapa: Railway
+
+O banco ainda não foi criado ou integrado. Perfil e participação usam armazenamento local do navegador. A aplicação precisa de um servidor Next.js para o endpoint Gemini; o GitHub armazena o código. A publicação no Railway exigirá configurar as variáveis no serviço, ajustar o host de execução e implementar autenticação/controle de origem no emissor de tokens, que atualmente aceita somente acesso local. Nenhuma chave está incluída neste repositório.
+
+As novas telas e limitações estão descritas em [docs/reference-ui.md](docs/reference-ui.md). As seções abaixo registram as etapas anteriores.
+
+---
+
+## Nova interface baseada na referência
+
+Abra http://127.0.0.1:3003/ para começar ou http://127.0.0.1:3003/inicio para explorar as categorias. As telas e seus estados estão conectados, com a voz e as proteções da etapa anterior preservadas. Veja `docs/reference-ui.md` para o mapa completo, arte e limitações. Esta seção substitui as notas anteriores sobre ausência da arte: o personagem agora foi recriado a partir da referência fornecida.
+
 ## Etapa 4 — safety
 
 Worktree `lumi-app-safety`, branch `safety`, baseado em `lumi-ui`.

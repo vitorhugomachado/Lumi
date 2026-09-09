@@ -116,6 +116,7 @@ function Conversation() {
   }
   return (
     <main className="conversation">
+      <Link className="back-round" href="/inicio" aria-label="Voltar ao início">←</Link>
       <div className="badge">
         ✦ {isMock ? "Conversa simulada" : "Conversa por voz · teste com adulto"}
       </div>
