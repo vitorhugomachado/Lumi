@@ -600,3 +600,100 @@ test("o analisador preserva a saída, acompanha o relógio de reprodução e can
   assert.equal(track.stopCount, 1);
   assert.equal(analyser.disconnected, true);
 });
+
+const { ReplyBuffer } = require("../src/lib/safety/ReplyBuffer.ts");
+const { flagContent, SessionLimiter } = require("../src/lib/safety/rules.ts");
+const {
+  ParentAccessStore,
+  checkChallenge,
+} = require("../src/lib/safety/ParentAccessStore.ts");
+test("safety blocks fragmented requests before audio playback", async () => {
+  const h = harness();
+  await h.p.connect();
+  h.p.startConversation(profile);
+  h.callbacks.onmessage({
+    serverContent: {
+      modelTurn: {
+        parts: [
+          { inlineData: { mimeType: "audio/pcm;rate=24000", data: "AAA=" } },
+        ],
+      },
+      outputTranscription: { text: "Qual seu tele" },
+    },
+  });
+  assert.equal(h.audio.played.length, 0);
+  h.callbacks.onmessage({
+    serverContent: {
+      outputTranscription: { text: "fone?" },
+      turnComplete: true,
+    },
+  });
+  assert.equal(h.audio.played.length, 0);
+  assert.equal(h.errors.length, 1);
+  assert.equal(h.session.closed, 1);
+  h.callbacks.onmessage({
+    serverContent: { outputTranscription: { text: "Oi!" }, turnComplete: true },
+  });
+  assert.equal(h.audio.played.length, 0);
+});
+test("safety fails closed on missing transcript and sensitive input", async () => {
+  for (const content of [
+    {
+      modelTurn: {
+        parts: [
+          { inlineData: { mimeType: "audio/pcm;rate=24000", data: "AAA=" } },
+        ],
+      },
+      turnComplete: true,
+    },
+    { inputTranscription: { text: "Meu telefone e 11999999999" } },
+  ]) {
+    const h = harness();
+    await h.p.connect();
+    h.p.startConversation(profile);
+    h.callbacks.onmessage({ serverContent: content });
+    assert.equal(h.audio.played.length, 0);
+    assert.equal(h.transcripts.length, 0);
+    assert.equal(h.session.closed, 1);
+  }
+});
+test("reply buffer rejects absent, invalid and oversized audio", () => {
+  const b = new ReplyBuffer();
+  b.appendText("Oi!");
+  assert.throws(() => b.approve());
+  assert.throws(() => b.appendAudio("AA=="));
+  assert.throws(() => b.appendAudio(Buffer.alloc(720002).toString("base64")));
+  assert.equal(flagContent("Faça o som do gato!"), null);
+  assert.equal(flagContent("Nosso segredinho"), "secrecy");
+});
+test("parent access expires and does not persist across stores", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const store = new ParentAccessStore();
+  store.unlock();
+  assert.equal(store.getSnapshot().unlocked, true);
+  assert.equal(new ParentAccessStore().getSnapshot().unlocked, false);
+  t.mock.timers.tick(300000);
+  assert.equal(store.getSnapshot().unlocked, false);
+  assert.equal(checkChallenge({ a: 13, b: 7 }, "20"), true);
+  assert.equal(checkChallenge({ a: 13, b: 7 }, "20x"), false);
+});
+test("session limits enforce inactivity, turns and total duration", (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  const ended = [];
+  const limiter = new SessionLimiter((reason) => ended.push(reason));
+  limiter.start();
+  t.mock.timers.tick(60000);
+  assert.equal(ended.pop(), "inactivity");
+  limiter.start();
+  for (let i = 0; i < 10; i++) limiter.replyFinished();
+  assert.equal(ended.pop(), "turn-limit");
+  limiter.start();
+  for (let i = 0; i < 6; i++) {
+    limiter.activity();
+    t.mock.timers.tick(30000);
+  }
+  assert.equal(ended.pop(), "time-limit");
+  limiter.stop();
+  t.mock.timers.tick(300000);
+  assert.equal(ended.length, 0);
+});

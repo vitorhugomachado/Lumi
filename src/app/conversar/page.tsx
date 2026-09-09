@@ -1,4 +1,6 @@
 "use client";
+import { ParentGate, useParentAccess } from "@/components/safety/ParentGate";
+
 import Link from "next/link";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
@@ -9,7 +11,7 @@ import { LumiScene } from "@/components/lumi/LumiScene";
 import { LumiState } from "@/components/lumi/LumiState";
 import { MicrophoneButton } from "@/components/voice/MicrophoneButton";
 const subscribe = () => () => {};
-export default function ConversationPage() {
+function ConversationPage() {
   const ready = useSyncExternalStore(
     subscribe,
     () => true,
@@ -25,6 +27,7 @@ export default function ConversationPage() {
 }
 function Conversation() {
   const router = useRouter();
+  const access = useParentAccess();
   const lifecycle = useRef({ generation: 0 });
   const isMock = (process.env.NEXT_PUBLIC_VOICE_PROVIDER ?? "mock") === "mock";
   const [consent, setConsent] = useState(false);
@@ -61,12 +64,17 @@ function Conversation() {
       provider.onTranscript((t) =>
         t.role === "assistant" ? setText(t.text) : setHeard(t.text),
       ),
-      provider.onError((e) => setError(e.message)),
+      provider.onError((e) => {
+        setError(e.message);
+        access.lock(e.message);
+      }),
     ];
     const session = lifecycle.current;
     const stop = () => {
       session.generation++;
       provider.stopConversation();
+      setText("");
+      setHeard("");
     };
     const hide = () => {
       if (document.visibilityState === "hidden") stop();
@@ -80,13 +88,15 @@ function Conversation() {
       off.forEach((fn) => fn());
       provider.disconnect();
     };
-  }, [profile, provider, initial.error, router]);
+  }, [profile, provider, initial.error, router, access]);
   const active = !["idle", "error"].includes(state);
   async function toggle() {
     if (!provider || !profile || (!isMock && !consent)) return;
     if (active) {
       lifecycle.current.generation++;
       provider.stopConversation();
+      setText("");
+      setHeard("");
       return;
     }
     const current = ++lifecycle.current.generation;
@@ -157,11 +167,19 @@ function Conversation() {
         <br />
         {isMock
           ? "As respostas aparecem em texto."
-          : "O app não salva áudio ou transcrições. Cada sessão dura até 3 minutos; trocar de aba encerra a conversa."}
+          : "O app não salva áudio ou transcrições. Cada sessão dura até 3 minutos ou 10 respostas, com pausa após 1 minuto sem interação; trocar de aba encerra a conversa."}
       </p>
       <Link className="text-link" href="/onboarding">
         Editar perfil
       </Link>
     </main>
+  );
+}
+
+export default function ProtectedPage() {
+  return (
+    <ParentGate>
+      <ConversationPage />
+    </ParentGate>
   );
 }

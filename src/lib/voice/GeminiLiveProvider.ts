@@ -1,3 +1,11 @@
+import { ReplyBuffer } from "../safety/ReplyBuffer";
+import {
+  flagContent,
+  SAFETY_LIMITS,
+  SessionLimiter,
+  SESSION_END_MESSAGES,
+  type SessionEndReason,
+} from "../safety/rules";
 import {
   GoogleGenAI,
   type LiveServerMessage,
@@ -82,7 +90,19 @@ export class GeminiLiveProvider implements VoiceProvider {
   private active = false;
   private turnComplete = false;
   private newTurn = true;
-  private outputText = "";
+  private reply = new ReplyBuffer();
+  private reviewTimeout?: ReturnType<typeof setTimeout>;
+  private limiter = new SessionLimiter((reason) => this.endSession(reason));
+  private endSession(reason: SessionEndReason) {
+    this.fail(new Error(SESSION_END_MESSAGES[reason]));
+  }
+  private awaitReply() {
+    if (!this.reviewTimeout)
+      this.reviewTimeout = setTimeout(
+        () => this.endSession("unverified-response"),
+        SAFETY_LIMITS.replyWaitMs,
+      );
+  }
   private inputText = "";
   private speechSeen = false;
   private silence?: ReturnType<typeof setTimeout>;
@@ -116,7 +136,11 @@ export class GeminiLiveProvider implements VoiceProvider {
         if (valid()) this.fail(error);
       };
       audio.onDrain = () => {
-        if (valid() && this.active && this.turnComplete) this.emit("listening");
+        if (valid() && this.active && this.turnComplete) {
+          this.turnComplete = false;
+          this.limiter.replyFinished();
+          if (this.active) this.emit("listening");
+        }
       };
       audio.onChunk = (data, rate, level) => {
         if (!valid() || !this.active || !this.session) return;
@@ -218,6 +242,8 @@ export class GeminiLiveProvider implements VoiceProvider {
     void _profile;
     if (!this.session || !this.audio) return;
     this.active = true;
+    this.limiter.start();
+    this.awaitReply();
     this.turnComplete = false;
     this.newTurn = true;
     this.emit("thinking");
@@ -239,58 +265,66 @@ export class GeminiLiveProvider implements VoiceProvider {
     try {
       if (content.interrupted) {
         this.audio?.interrupt();
-        this.turnComplete = true;
+        this.reply.reset();
+        clearTimeout(this.reviewTimeout);
+        this.reviewTimeout = undefined;
+        this.turnComplete = false;
         this.newTurn = true;
-        this.outputText = "";
         this.emit("listening");
+        return;
       }
       if (content.inputTranscription?.text) {
-        this.inputText = (
-          this.inputText + content.inputTranscription.text
-        ).slice(-2000);
+        this.inputText += content.inputTranscription.text;
+        if (this.inputText.length > 2000 || flagContent(this.inputText)) {
+          this.endSession("safety");
+          return;
+        }
+        this.limiter.activity();
         this.transcripts.forEach((fn) =>
           fn({ role: "user", text: this.inputText }),
         );
+        this.awaitReply();
       }
       if (
         content.modelTurn?.parts?.length ||
         content.outputTranscription?.text
       ) {
         if (this.newTurn) {
-          this.outputText = "";
+          this.reply.reset();
           this.inputText = "";
           this.newTurn = false;
         }
         this.turnComplete = false;
         clearTimeout(this.silence);
+        this.awaitReply();
+        this.emit("thinking");
       }
-      if (content.outputTranscription?.text) {
-        this.outputText = (
-          this.outputText + content.outputTranscription.text
-        ).slice(-2000);
-        this.transcripts.forEach((fn) =>
-          fn({ role: "assistant", text: this.outputText }),
-        );
-      }
+      if (content.outputTranscription?.text)
+        this.reply.appendText(content.outputTranscription.text);
       for (const part of content.modelTurn?.parts ?? []) {
         if (
           part.inlineData?.data &&
           part.inlineData.mimeType?.startsWith("audio/pcm")
-        ) {
-          this.audio?.play(part.inlineData.data);
-          this.emit("speaking");
-        }
+        )
+          this.reply.appendAudio(part.inlineData.data);
       }
       if (content.turnComplete) {
+        const approved = this.reply.approve();
+        clearTimeout(this.reviewTimeout);
+        this.reviewTimeout = undefined;
+        this.transcripts.forEach((fn) =>
+          fn({ role: "assistant", text: approved.text }),
+        );
+        for (const chunk of approved.chunks) this.audio?.play(chunk);
         this.turnComplete = true;
         this.newTurn = true;
-        if (!this.audio?.playing) this.emit("listening");
+        this.emit("speaking");
       }
-    } catch {
-      this.fail(
-        new Error(
-          "Não foi possível reproduzir a resposta. Tente iniciar outra conversa.",
-        ),
+    } catch (error) {
+      this.endSession(
+        error instanceof Error && error.message === "unsafe-reply"
+          ? "safety"
+          : "unverified-response",
       );
     }
   }
@@ -311,7 +345,10 @@ export class GeminiLiveProvider implements VoiceProvider {
     } catch {
       /* Resource already closed remotely. */
     }
-    this.outputText = "";
+    this.reply.reset();
+    this.limiter.stop();
+    clearTimeout(this.reviewTimeout);
+    this.reviewTimeout = undefined;
     this.inputText = "";
     this.speechSeen = false;
     this.levels.reset();

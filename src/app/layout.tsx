@@ -1,3 +1,4 @@
+import { ParentAccessProvider } from "@/components/safety/ParentGate";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { existsSync } from "node:fs";
@@ -33,7 +34,7 @@ export default function RootLayout({
                 Área dos pais <span aria-hidden="true">↗</span>
               </Link>
             </header>
-            {children}
+            <ParentAccessProvider>{children}</ParentAccessProvider>
             <footer>Um pouquinho de conversa. Um montão de carinho.</footer>
           </div>
         </LumiArtworkProvider>

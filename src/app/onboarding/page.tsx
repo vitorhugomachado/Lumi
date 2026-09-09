@@ -1,5 +1,6 @@
+import { ParentGate } from "@/components/safety/ParentGate";
 import { ChildProfileForm } from "@/components/onboarding/ChildProfileForm";
-export default function Onboarding() {
+function Onboarding() {
   return (
     <main className="page">
       <div className="eyebrow">VAMOS NOS CONHECER</div>
@@ -11,5 +12,13 @@ export default function Onboarding() {
       <p className="intro">Cada descoberta começa com algo que ele adora.</p>
       <ChildProfileForm />
     </main>
+  );
+}
+
+export default function ProtectedPage() {
+  return (
+    <ParentGate>
+      <Onboarding />
+    </ParentGate>
   );
 }

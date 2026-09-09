@@ -1,10 +1,13 @@
 "use client";
+import { ParentGate, useParentAccess } from "@/components/safety/ParentGate";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { clearProfile } from "@/lib/child/storage";
-export default function Parents() {
+function Parents() {
   const router = useRouter();
+  const access = useParentAccess();
   const [confirm, setConfirm] = useState(false);
   const [error, setError] = useState("");
   return (
@@ -16,6 +19,21 @@ export default function Parents() {
         juntos.
       </h1>
       <p className="intro">Um olhar carinhoso para as brincadeiras.</p>
+      <section className="panel">
+        <h2>Conversas com pausas</h2>
+        <p>
+          A voz encerra em até 3 minutos, 10 respostas ou 1 minuto sem
+          interação. Cada resposta aguarda a verificação de sua transcrição
+          antes de tocar.
+        </p>
+        <p>
+          O perfil fica neste navegador. Áudio e transcrições não são salvos
+          pelo app; a voz é enviada ao Google Gemini durante o teste.
+        </p>
+        <button className="button secondary" onClick={() => access.lock()}>
+          Bloquear acesso agora
+        </button>
+      </section>
       <div className="badge">Dados fictícios · demonstração</div>
       <div className="stats">
         <section>
@@ -87,5 +105,13 @@ export default function Parents() {
         avaliação de desenvolvimento.
       </p>
     </main>
+  );
+}
+
+export default function ProtectedPage() {
+  return (
+    <ParentGate>
+      <Parents />
+    </ParentGate>
   );
 }

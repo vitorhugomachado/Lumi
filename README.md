@@ -1,3 +1,17 @@
+## Etapa 4 — safety
+
+Worktree `lumi-app-safety`, branch `safety`, baseado em `lumi-ui`.
+Preview local: http://127.0.0.1:3003/conversar/ (`npm run dev -- --port 3003`).
+O acesso começa com uma conta para um responsável; a liberação dura cinco minutos em memória. Não é autenticação. A área dos pais permite bloquear novamente.
+
+A voz termina em até três minutos, dez respostas ou um minuto sem interação. Respostas ficam em memória até completar a transcrição e passar por filtros locais, antes de reproduzir áudio. Sem transcrição, com conteúdo sinalizado, áudio inválido, resposta acima de 15 segundos ou espera de 20 segundos, o app encerra e pede um responsável. Isso acrescenta latência. O microfone e a conexão são liberados no encerramento.
+
+O perfil continua local e não é incluído no pedido ao Gemini. O áudio é transmitido ao Google; o app não persiste áudio ou transcrições. Os filtros dependem de transcrições, não verificam semanticamente o áudio e podem errar ou deixar passar conteúdo. Esta etapa não valida o produto para uso com crianças. O endpoint de tokens continua restrito ao computador local; o gate não o substitui.
+
+Validação: `npm run lint`, `npm test` (26 testes), `npm run build`. O teste de microfone e a audição nesta versão precisam ser feitos por um adulto. O site publicado permanece na versão anterior. A arte oficial ainda precisa ser fornecida.
+
+---
+
 # Lumi — Space 3: lumi-ui
 
 Interface reativa à voz, em worktree `lumi-app-lumi-ui` e branch `lumi-ui`, baseada na etapa `voice-gemini`. As branches anteriores permanecem preservadas. As barras de volume usam o microfone e o áudio realmente reproduzido; o personagem acompanha os estados. Esta etapa é exclusivamente para testes com adultos; não está liberada para coleta de áudio de crianças.
