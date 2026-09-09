@@ -215,7 +215,7 @@ function Surface({ screen }: { screen: string }) {
             href="/familia"
             aria-label="Área da família"
           >
-            ♙
+            <Icon name="user" size={20} />
           </Link>
           <h1>
             Olá, pequeno(a)
@@ -230,7 +230,9 @@ function Surface({ screen }: { screen: string }) {
           <Mascot />
         </div>
         <Link className="play-banner" href="/conversar">
-          <span className="play-symbol">▶</span>
+          <span className="play-symbol" aria-hidden="true">
+            ➤
+          </span>
           <span>
             <strong>Vamos brincar?</strong>
             <small>Uma conversa com o Lumi</small>
@@ -894,7 +896,9 @@ function Progress({ family = false }: { family?: boolean }) {
   });
   const max = Math.max(1, ...days.map((d) => d.count));
   return (
-    <main className="ref-screen progress-screen">
+    <main
+      className={`ref-screen progress-screen ${family ? "family-screen" : ""}`}
+    >
       {family && (
         <div className="family-top">
           <span>👩</span>
@@ -908,7 +912,6 @@ function Progress({ family = false }: { family?: boolean }) {
         </div>
       )}
       <h1>{family ? "Olá, família!" : "Progresso"}</h1>
-      {family && <AccountEntry />}
       {family ? (
         <div className="family-message">
           <p>
@@ -1004,6 +1007,7 @@ function Progress({ family = false }: { family?: boolean }) {
           Área dos responsáveis
         </Link>
       )}
+      {family && <AccountEntry />}
     </main>
   );
 }

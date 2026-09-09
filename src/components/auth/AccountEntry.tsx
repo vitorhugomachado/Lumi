@@ -3,7 +3,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cloud, logoutCloud } from "@/lib/cloud";
-import "./auth.css";
 export function AccountEntry() {
   const router = useRouter();
   const [error, setError] = useState("");

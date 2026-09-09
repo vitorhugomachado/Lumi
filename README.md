@@ -4,6 +4,10 @@ Aplicativo Next.js com interface baseada na referência visual, atividades locai
 
 Repositório: https://github.com/vitorhugomachado/Lumi
 
+## Sistema visual
+
+Fonte Nunito local e tokens compartilhados de cores, espaçamento, raios e estados em todas as telas. Consulte [docs/design-system.md](docs/design-system.md).
+
 ## Entrar e criar conta
 
 Telas /login e /criar-conta, acessíveis pela família e configurações. Cadastro com e-mail e senha preserva os dados de visitante; login recupera os dados da conta. Cadastro segue opcional. Google, Apple e recuperação por e-mail ainda não estão disponíveis. Veja [docs/auth-screens.md](docs/auth-screens.md).

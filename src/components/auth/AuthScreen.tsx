@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Mascot } from "@/components/app/Mascot";
 import { cloud, hydrateCloud } from "@/lib/cloud";
-import "./auth.css";
 function FieldIcon({ kind }: { kind: "email" | "name" | "lock" | "eye" }) {
   return (
     <svg

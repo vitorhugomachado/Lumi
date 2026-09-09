@@ -7,7 +7,7 @@
     radial-gradient(ellipse at 12% 27%, #fff8de 0, transparent 30%),
     radial-gradient(ellipse at 95% 50%, #f9e4fd 0, transparent 48%),
     linear-gradient(165deg, #dcd6ff, #eee4ff 52%, #fff4dc);
-  color: #5540a0;
+  color: var(--lumi-text);
 }
 .auth-hero {
   position: relative;
@@ -41,7 +41,7 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 3px 1px #ffffff);
-  font-family: "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  font-family: var(--lumi-font);
 }
 .auth-brand i {
   position: absolute;
@@ -54,7 +54,7 @@
 }
 .auth-brand small {
   font-size: 9px;
-  color: #704bf9;
+  color: var(--lumi-brand);
   margin-top: 3px;
 }
 .auth-hero .auth-mascot {
@@ -170,14 +170,14 @@
   font-size: 27px;
   letter-spacing: -1px;
   line-height: 1.15;
-  color: #5830ee;
+  color: var(--lumi-brand);
   margin: 0 0 5px;
 }
 .auth-intro {
   text-align: center;
   margin: 0 0 17px;
   font-size: 13px;
-  color: #8371b3;
+  color: var(--lumi-muted);
   line-height: 1.25;
 }
 .auth-card form,
@@ -189,7 +189,7 @@
 }
 .auth-field {
   display: block;
-  color: #6945ef;
+  color: var(--lumi-brand);
   font-size: 11px;
   font-weight: 700;
   margin: 0 0 10px;
@@ -198,9 +198,9 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  border: 1px solid #e5dbff;
+  border: 1px solid var(--lumi-border);
   background: #ffffffd9;
-  border-radius: 14px;
+  border-radius: var(--lumi-radius-field);
   box-shadow: 0 3px 8px #b49be60b;
   padding: 0 12px;
   min-height: 44px;
@@ -219,13 +219,13 @@
   outline: 0 !important;
   box-shadow: none !important;
   padding: 8px 0 !important;
-  color: #4f4283;
+  color: var(--lumi-text);
   font-size: 16px;
   min-height: 42px;
   border-radius: 0;
 }
 .auth-input input::placeholder {
-  color: #9284be;
+  color: var(--lumi-muted);
   font-size: 12px;
   opacity: 1;
 }
@@ -257,7 +257,7 @@
   gap: 7px;
   margin: 0;
   line-height: 1.4;
-  color: #7862ac;
+  color: var(--lumi-muted);
   font-weight: 400;
 }
 .auth-check input {
@@ -272,7 +272,7 @@
 .auth-check a,
 .auth-text {
   text-decoration: underline;
-  color: #7352ec;
+  color: var(--lumi-brand);
 }
 .auth-text {
   border: 0;
@@ -307,7 +307,7 @@
 }
 .auth-alternate {
   border: 1px solid #9a78ff;
-  color: #6941ff;
+  color: var(--lumi-brand);
   background: #fff;
   margin-top: 9px;
   min-height: 39px;
@@ -339,11 +339,11 @@
   gap: 10px;
   width: 100%;
   min-height: 41px;
-  border: 1px solid #e8deff;
+  border: 1px solid var(--lumi-border);
   background: #fff;
-  border-radius: 14px;
+  border-radius: var(--lumi-radius-field);
   box-shadow: 0 3px 7px #d4c8e930;
-  color: #554488;
+  color: var(--lumi-text);
   font-size: 11px;
   font-weight: 700;
   opacity: 1;
@@ -352,7 +352,7 @@
 .auth-socials small {
   font-size: 8px;
   font-weight: 400;
-  color: #9282a7;
+  color: var(--lumi-muted);
 }
 .google-mark {
   font: 900 22px Arial;
@@ -381,7 +381,7 @@
   font-size: 10px;
   margin: 0;
   line-height: 1.4;
-  color: #806bab;
+  color: var(--lumi-muted);
 }
 .auth-footer small {
   display: block;
@@ -402,14 +402,14 @@
 }
 .auth-password-hint {
   font-size: 10px;
-  color: #9381b2;
+  color: var(--lumi-muted);
   margin: -5px 0 9px;
 }
 .auth-error {
   font-size: 12px;
   line-height: 1.4;
-  background: #fff0f2;
-  color: #99365a;
+  background: var(--lumi-error-bg);
+  color: var(--lumi-error-text);
   padding: 10px;
   border-radius: 10px;
   margin: 8px 0;
@@ -426,12 +426,12 @@
 .auth-local {
   font-size: 11px;
   text-align: center;
-  color: #81718f;
+  color: var(--lumi-muted);
   margin: 10px 0 0;
 }
 .auth-local a {
   text-decoration: underline;
-  color: #6744d9;
+  color: var(--lumi-brand);
 }
 .auth-dialog {
   position: fixed;
@@ -450,7 +450,7 @@
 }
 .auth-dialog h2 {
   font-size: 22px;
-  color: #6b42e5;
+  color: var(--lumi-brand);
   margin: 0;
 }
 .auth-dialog p {
@@ -469,7 +469,7 @@
   font-size: 13px;
 }
 .account-entry a {
-  color: #7245f2;
+  color: var(--lumi-brand);
   font-weight: 700;
   font-size: 14px;
 }

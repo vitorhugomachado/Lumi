@@ -1,0 +1,68 @@
+/* Lumi foundations — shared by every route. */
+:root {
+  --lumi-font: var(--font-lumi), "Trebuchet MS", Arial, sans-serif;
+  --lumi-brand: #6031dc;
+  --lumi-heading: #5125cd;
+  --lumi-text: #43336c;
+  --lumi-muted: #71618b;
+  --lumi-paper: #fffdf8;
+  --lumi-surface: #ffffffed;
+  --lumi-border: #e9dff7;
+  --lumi-selected: #f1eaff;
+  --lumi-focus: #5125cd;
+  --lumi-primary: linear-gradient(115deg, #8654d9, #7040df);
+  --lumi-primary-hover: linear-gradient(115deg, #7948cf, #6231d3);
+  --lumi-primary-soft: linear-gradient(115deg, #c4b4f5, #b09ce9);
+  --lumi-page:
+    radial-gradient(ellipse at 4% 5%, #faeaf480, transparent 56%),
+    radial-gradient(ellipse at 95% 94%, #fff0cb66, transparent 58%),
+    var(--lumi-paper);
+  --lumi-hero:
+    radial-gradient(ellipse at 90% 85%, #fff2b7, transparent 58%),
+    linear-gradient(135deg, #bfd9ff, #d8ceff 62%, #f9e6f0);
+  --lumi-peach: linear-gradient(145deg, #fff0d4, #ffdcbe);
+  --lumi-purple: linear-gradient(145deg, #f1e7ff, #dfd2ff);
+  --lumi-mint: linear-gradient(145deg, #ddffe6, #bff2d7);
+  --lumi-yellow: linear-gradient(145deg, #fff8d7, #ffebad);
+  --lumi-blue: linear-gradient(145deg, #e2f7ff, #c1e4ff);
+  --lumi-pink: linear-gradient(145deg, #ffeff5, #ffd6e7);
+  --lumi-radius-sm: 12px;
+  --lumi-radius-field: 16px;
+  --lumi-radius-card: 24px;
+  --lumi-radius-button: 22px;
+  --lumi-radius-page: 36px;
+  --lumi-space-1: 4px;
+  --lumi-space-2: 8px;
+  --lumi-space-3: 12px;
+  --lumi-space-4: 16px;
+  --lumi-space-6: 24px;
+  --lumi-space-8: 32px;
+  --lumi-page-x: 24px;
+  --lumi-touch: 44px;
+  --lumi-control: 52px;
+  --lumi-type-title: 1.75rem;
+  --lumi-type-section: 1.125rem;
+  --lumi-type-body: 0.9375rem;
+  --lumi-type-label: 0.875rem;
+  --lumi-type-small: 0.8125rem;
+  --lumi-shadow-card: 0 3px 12px #6c439307;
+  --lumi-shadow-action: inset 0 1px 2px #ffffff40, 0 4px 12px #8358d525;
+  --lumi-shadow-shell: 0 16px 64px #7760ae18;
+  --lumi-error-bg: #fff0f2;
+  --lumi-error-text: #99365a;
+  /* Compatibility names used by the existing voice animations. */
+  --action: var(--lumi-brand);
+  --ink: var(--lumi-text);
+  --muted: var(--lumi-muted);
+  --cream: var(--lumi-paper);
+  --lavender: #ab8af3;
+  --lavender-light: #eee6ff;
+  --blue: #def3ff;
+  --mint: #dbf9e6;
+  --star: #ffe682;
+}
+@media (max-width: 360px) {
+  :root {
+    --lumi-page-x: 20px;
+  }
+}
