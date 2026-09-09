@@ -1,4 +1,5 @@
 "use client";
+import { AccountEntry } from "@/components/auth/AccountEntry";
 import { cloud } from "@/lib/cloud";
 import { Icon } from "./Icon";
 import Image from "next/image";
@@ -907,6 +908,7 @@ function Progress({ family = false }: { family?: boolean }) {
         </div>
       )}
       <h1>{family ? "Olá, família!" : "Progresso"}</h1>
+      {family && <AccountEntry />}
       {family ? (
         <div className="family-message">
           <p>
@@ -1077,6 +1079,7 @@ function Settings({ parents }: { parents: boolean }) {
     <main className="ref-screen settings-screen">
       <Back href="/familia" />
       <h1>{parents ? "Área dos Responsáveis" : "Configurações"}</h1>
+      <AccountEntry />
       <div className="menu-list">
         {menus.map((label, i) => (
           <button

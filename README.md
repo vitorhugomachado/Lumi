@@ -4,6 +4,10 @@ Aplicativo Next.js com interface baseada na referência visual, atividades locai
 
 Repositório: https://github.com/vitorhugomachado/Lumi
 
+## Entrar e criar conta
+
+Telas /login e /criar-conta, acessíveis pela família e configurações. Cadastro com e-mail e senha preserva os dados de visitante; login recupera os dados da conta. Cadastro segue opcional. Google, Apple e recuperação por e-mail ainda não estão disponíveis. Veja [docs/auth-screens.md](docs/auth-screens.md).
+
 ## Perfil individual na voz
 
 Lumi usa nome, idade, interesses e palavras conhecidas do perfil salvo para personalizar cada nova conversa. No Railway a ficha é lida no Postgres pelo usuário da sessão; localmente vem do navegador. Perfil continua opcional. Alterações entram na próxima conversa. Isso fornece contexto ao Gemini, sem treinar o modelo ou salvar memórias de conversas. Veja [docs/voice-profile.md](docs/voice-profile.md); esta seção substitui as notas históricas sobre perfil não enviado.

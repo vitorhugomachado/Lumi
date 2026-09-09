@@ -38,7 +38,8 @@ async function main() {
             action: "register",
             email,
             password,
-            adult: true,
+            name: "Conta de teste",
+            acceptTerms: true,
           });
       assert.equal(result.status, 200);
       users.push({ email, password, cookie: result.cookie });

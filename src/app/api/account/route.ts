@@ -24,6 +24,11 @@ export const GET = api(async (request) => {
   }
 });
 export const POST = api(async (request) => {
+  if (!process.env.DATABASE_URL)
+    throw new ApiError(
+      503,
+      "Para entrar ou criar uma conta, use a versão online do Lumi.",
+    );
   const input = await body(request);
   if (
     input &&
@@ -50,37 +55,77 @@ export const POST = api(async (request) => {
   await db().query(
     "DELETE FROM lumi_rate_limits WHERE expires_at<now()-interval '1 day'",
   );
-  let user: { id: string; email: string };
+  let user: {
+    id: string;
+    email: string;
+    display_name?: string | null;
+    is_guest?: boolean;
+  };
+  const remember = !("remember" in input) || input.remember !== false;
+  const duration = remember ? SESSION_SECONDS : 86400;
   const token = newSessionToken();
   if (input.action === "register") {
-    if (!("adult" in input) || input.adult !== true)
+    if (
+      !("name" in input) ||
+      typeof input.name !== "string" ||
+      !input.name.trim() ||
+      input.name.trim().length > 100
+    )
+      throw new ApiError(400, "Informe seu nome (até 100 caracteres).");
+    if (!("acceptTerms" in input) || input.acceptTerms !== true)
       throw new ApiError(
         400,
-        "O cadastro deve ser feito por um responsável adulto.",
+        "Leia e aceite os termos e a política de privacidade.",
       );
     await limit("register-global", 10, 3600);
-    const id = randomUUID();
+    const name = input.name.trim();
     const hash = await hashPassword(input.password);
-    const created = await transaction(async (client) => {
-      const result = await client.query(
-        "INSERT INTO lumi_accounts(id,email,password_hash) VALUES($1,$2,$3) ON CONFLICT(email) DO NOTHING RETURNING id,email",
-        [id, email, hash],
-      );
-      if (!result.rows[0])
-        throw new ApiError(
-          409,
-          "Não foi possível cadastrar este e-mail. Tente entrar na sua conta.",
+    let current: Awaited<ReturnType<typeof account>> | null = null;
+    try {
+      current = await account(request);
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 401) throw error;
+    }
+    try {
+      user = await transaction(async (client) => {
+        const id = current?.is_guest ? current.id : randomUUID();
+        // Lock and promote the same guest owner, preserving its profile/history.
+        const result = current?.is_guest
+          ? await client.query(
+              "UPDATE lumi_accounts SET email=$2,password_hash=$3,display_name=$4,is_guest=false,terms_version='2026-09-09',terms_accepted_at=now() WHERE id=$1 AND is_guest=true RETURNING id,email,display_name,is_guest",
+              [id, email, hash, name],
+            )
+          : await client.query(
+              "INSERT INTO lumi_accounts(id,email,password_hash,display_name,terms_version,terms_accepted_at) VALUES($1,$2,$3,$4,'2026-09-09',now()) RETURNING id,email,display_name,is_guest",
+              [id, email, hash, name],
+            );
+        if (!result.rows[0])
+          throw new ApiError(
+            409,
+            "Esta sessão já criou uma conta. Entre para continuar.",
+          );
+        await client.query("DELETE FROM lumi_sessions WHERE account_id=$1", [
+          id,
+        ]);
+        await client.query(
+          "INSERT INTO lumi_sessions(token_hash,account_id,expires_at,remember_me) VALUES($1,$2,now()+$3*interval '1 second',$4)",
+          [digest(token), id, duration, remember],
         );
-      await client.query(
-        "INSERT INTO lumi_sessions(token_hash,account_id,expires_at) VALUES($1,$2,now()+$3*interval '1 second')",
-        [digest(token), id, SESSION_SECONDS],
-      );
-      return result.rows[0];
-    });
-    user = created;
+        return result.rows[0];
+      });
+    } catch (error) {
+      if (
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        error.code === "23505"
+      )
+        throw new ApiError(409, "Este e-mail já tem uma conta. Use Entrar.");
+      throw error;
+    }
   } else {
     const result = await db().query(
-      "SELECT id,email,password_hash FROM lumi_accounts WHERE email=$1",
+      "SELECT id,email,password_hash,display_name FROM lumi_accounts WHERE email=$1",
       [email],
     );
     const found = result.rows[0];
@@ -91,11 +136,16 @@ export const POST = api(async (request) => {
     );
     if (!found || !valid)
       throw new ApiError(401, "E-mail ou senha incorretos.");
-    user = { id: found.id, email: found.email };
+    user = {
+      id: found.id,
+      email: found.email,
+      display_name: found.display_name,
+      is_guest: false,
+    };
     await transaction(async (client) => {
       await client.query(
-        "INSERT INTO lumi_sessions(token_hash,account_id,expires_at) VALUES($1,$2,now()+$3*interval '1 second')",
-        [digest(token), user.id, SESSION_SECONDS],
+        "INSERT INTO lumi_sessions(token_hash,account_id,expires_at,remember_me) VALUES($1,$2,now()+$3*interval '1 second',$4)",
+        [digest(token), user.id, duration, remember],
       );
       await client.query(
         "DELETE FROM lumi_sessions WHERE account_id=$1 AND token_hash NOT IN (SELECT token_hash FROM lumi_sessions WHERE account_id=$1 ORDER BY created_at DESC LIMIT 5)",
@@ -103,7 +153,7 @@ export const POST = api(async (request) => {
       );
     });
   }
-  return json({ user }, 200, { "Set-Cookie": cookie(token) });
+  return json({ user }, 200, { "Set-Cookie": cookie(token, false, remember) });
 });
 
 export const DELETE = api(async (request) => {

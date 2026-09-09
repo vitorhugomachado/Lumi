@@ -7,7 +7,8 @@ let startup: Promise<void> | null = null;
 function prepare() {
   if (!startup) {
     startup = (async () => {
-      await requestJson("/api/guest", "POST", {});
+      const result = await requestJson("/api/guest", "POST", {});
+      cloud.user = result.user;
       await hydrateCloud();
     })().finally(() => {
       startup = null;

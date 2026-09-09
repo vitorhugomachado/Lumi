@@ -33,8 +33,8 @@ export function sessionToken(request: Request) {
     ?.slice(SESSION_COOKIE.length + 1);
   return token && /^[a-f0-9]{64}$/.test(token) ? token : null;
 }
-export function cookie(token: string, clear = false) {
-  return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${clear ? 0 : SESSION_SECONDS}${process.env.APP_ORIGIN?.startsWith("https:") ? "; Secure" : ""}`;
+export function cookie(token: string, clear = false, persistent = true) {
+  return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; SameSite=Lax${clear ? "; Max-Age=0" : persistent ? `; Max-Age=${SESSION_SECONDS}` : ""}${process.env.APP_ORIGIN?.startsWith("https:") ? "; Secure" : ""}`;
 }
 export function validOrigin(
   request: Request,
@@ -52,9 +52,7 @@ export function validOrigin(
     return false;
   }
 }
-export function validCredentials(
-  value: unknown,
-): value is {
+export function validCredentials(value: unknown): value is {
   email: string;
   password: string;
   action: "register" | "login" | "logout";

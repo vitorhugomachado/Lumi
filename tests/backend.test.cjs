@@ -134,3 +134,11 @@ test("credentials and activities reject malformed or unbounded input", () => {
   ])
     assert(!validActivity(invalid));
 });
+
+test("remember me uses a persistent cookie only when selected", () => {
+  const token = newSessionToken();
+  assert.match(cookie(token), /Max-Age=604800/);
+  assert.doesNotMatch(cookie(token, false, false), /Max-Age|Expires/);
+  assert.match(cookie(token, true, false), /Max-Age=0/);
+  assert.match(cookie(token, false, false), /HttpOnly; SameSite=Lax/);
+});

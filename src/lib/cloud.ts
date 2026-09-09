@@ -2,6 +2,12 @@ import type { ChildProfile } from "./child/profile";
 import type { Activity } from "./activity";
 export const cloud = {
   enabled: false,
+  user: null as {
+    id: string;
+    email: string | null;
+    is_guest: boolean;
+    display_name?: string | null;
+  } | null,
   version: 0,
   profile: null as ChildProfile | null,
   activities: [] as Activity[],
@@ -46,6 +52,7 @@ export async function logoutCloud() {
   if (!cloud.enabled) return;
   await requestJson("/api/account", "POST", { action: "logout" });
   cloud.version++;
+  cloud.user = null;
   cloud.profile = null;
   cloud.activities = [];
   window.dispatchEvent(new Event("lumi-session-expired"));

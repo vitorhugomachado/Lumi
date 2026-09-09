@@ -68,7 +68,7 @@ export async function account(request: Request) {
   if (!token)
     throw new ApiError(401, "Preparando seu acesso. Tente novamente.");
   const result = await db().query(
-    "SELECT a.id,a.email,a.is_guest FROM lumi_sessions s JOIN lumi_accounts a ON a.id=s.account_id WHERE s.token_hash=$1 AND s.expires_at>now()",
+    "SELECT a.id,a.email,a.is_guest,a.display_name,s.remember_me FROM lumi_sessions s JOIN lumi_accounts a ON a.id=s.account_id WHERE s.token_hash=$1 AND s.expires_at>now()",
     [digest(token)],
   );
   if (!result.rows[0])
@@ -80,6 +80,8 @@ export async function account(request: Request) {
     id: string;
     email: string | null;
     is_guest: boolean;
+    display_name: string | null;
+    remember_me: boolean;
   };
 }
 export async function limit(key: string, max: number, seconds: number) {

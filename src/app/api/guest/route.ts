@@ -18,9 +18,11 @@ export const POST = api(async (request) => {
     const token = sessionToken(request)!;
     await db().query(
       "UPDATE lumi_sessions SET expires_at=now()+$2*interval '1 second' WHERE token_hash=$1",
-      [digest(token), SESSION_SECONDS],
+      [digest(token), user.remember_me ? SESSION_SECONDS : 86400],
     );
-    return json({ user }, 200, { "Set-Cookie": cookie(token) });
+    return json({ user }, 200, {
+      "Set-Cookie": cookie(token, false, user.remember_me),
+    });
   } catch (error) {
     if (!(error instanceof ApiError) || error.status !== 401) throw error;
   }

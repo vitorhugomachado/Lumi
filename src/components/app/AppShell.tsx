@@ -27,7 +27,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     "/configuracoes",
   ].includes(path.replace(/\/$/, ""));
   return (
-    <div className={`app-shell ${show ? "with-tabs" : ""}`}>
+    <div
+      className={`app-shell ${show ? "with-tabs" : ""} ${/^\/(login|criar-conta)\/?$/.test(path) ? "auth-shell" : ""}`}
+    >
       <div className="device-top" aria-hidden="true">
         <span>Lumi</span>
         <span>✦ ✧ ✦</span>
