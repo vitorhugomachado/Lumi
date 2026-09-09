@@ -1,0 +1,600 @@
+Você é o engenheiro principal do projeto **Lumi**.
+
+Sua tarefa é construir a primeira versão funcional de uma aplicação web/PWA conversacional por voz para crianças pequenas, inicialmente como protótipo para testes com adultos.
+
+## VISÃO DO PRODUTO
+
+Lumi é um personagem virtual amigável que conversa por voz com crianças pequenas para estimular linguagem, vocabulário e pequenas frases.
+
+O produto deverá futuramente ser usado por crianças de aproximadamente 2 a 4 anos sob supervisão dos responsáveis.
+
+Nesta primeira versão, NÃO implementar diagnóstico médico, terapia, promessas de desenvolvimento ou testes clínicos.
+
+---
+
+# OBJETIVO DA V0
+
+Construir um protótipo funcional com este fluxo:
+
+Responsável abre o site
+
+→ tela de boas-vindas
+
+→ configura perfil local da criança
+
+→ entra na tela do Lumi
+
+→ autoriza microfone
+
+→ inicia conversa
+
+→ Lumi recebe áudio
+
+→ IA responde
+
+→ áudio da resposta é reproduzido
+
+→ personagem muda visualmente entre:
+idle / listening / thinking / speaking
+
+---
+
+# STACK
+
+Use:
+
+- Next.js atual com App Router
+- React
+- TypeScript strict
+- Tailwind CSS
+- Web Audio API
+- Gemini Live como primeiro VoiceProvider
+- localStorage para perfil
+- sem banco de dados
+- sem autenticação
+- sem pagamentos
+- sem analytics de terceiros nesta versão
+
+Não adicione dependências sem necessidade.
+
+---
+
+# ARQUITETURA
+
+A aplicação NÃO pode ficar acoplada ao Gemini.
+
+Criar uma interface:
+
+src/lib/voice/VoiceProvider.ts
+
+Ela deve permitir futuramente:
+
+- GeminiLiveProvider
+- OpenAIRealtimeProvider
+- LocalVoiceProvider
+
+Interface conceitual:
+
+connect()
+disconnect()
+startConversation()
+stopConversation()
+
+onStateChange()
+onTranscript()
+onError()
+
+Estados:
+
+idle
+connecting
+listening
+thinking
+speaking
+error
+
+---
+
+# ESTRUTURA DE DIRETÓRIOS
+
+Use aproximadamente:
+
+src/
+  app/
+    page.tsx
+
+    onboarding/
+      page.tsx
+
+    conversar/
+      page.tsx
+
+    pais/
+      page.tsx
+
+    api/
+      gemini-token/
+        route.ts
+
+  components/
+    lumi/
+      LumiCharacter.tsx
+      LumiState.tsx
+
+    voice/
+      MicrophoneButton.tsx
+      VoiceWaveform.tsx
+
+    onboarding/
+      ChildProfileForm.tsx
+
+  lib/
+    voice/
+      VoiceProvider.ts
+      GeminiLiveProvider.ts
+
+    child/
+      profile.ts
+      storage.ts
+
+    safety/
+      rules.ts
+
+  prompts/
+    lumiSystemPrompt.ts
+
+public/
+  lumi/
+    lumi.png
+
+---
+
+# DESIGN
+
+Criar uma interface mobile-first.
+
+Paleta:
+
+Lavanda:
+#8B73E6
+
+Lavanda clara:
+#EAE4FF
+
+Creme:
+#FFF8EE
+
+Azul bebê:
+#DDF4FF
+
+Menta:
+#DDF7EE
+
+Amarelo estrela:
+#FFE682
+
+Texto principal:
+#31305A
+
+Visual:
+
+- infantil sem parecer um brinquedo barato;
+- extremamente limpo;
+- botões grandes;
+- cantos arredondados;
+- espaços generosos;
+- praticamente nenhuma navegação complexa;
+- personagem como foco principal.
+
+---
+
+# TELA 1 — WELCOME
+
+Exibir:
+
+Lumi
+
+"Pequenas palavras.
+Grandes descobertas."
+
+Personagem Lumi central.
+
+Botão:
+
+"Começar"
+
+Ao clicar:
+
+/onboarding
+
+---
+
+# TELA 2 — ONBOARDING
+
+Título:
+
+"Conheça um pouquinho sobre seu pequeno"
+
+Campos:
+
+Nome da criança
+
+Idade em meses ou anos/meses
+
+Interesses selecionáveis:
+
+Animais
+Música
+Bola
+Carros
+Dinossauros
+Comida
+Natureza
+Histórias
+
+Campo opcional:
+
+"Palavras que já costuma falar"
+
+Exemplo:
+
+mamãe, água, bola
+
+Botão:
+
+"Continuar"
+
+Salvar tudo somente em localStorage.
+
+Não enviar dados para servidor.
+
+---
+
+# MODELO DO PERFIL
+
+Criar:
+
+type ChildProfile = {
+  name: string;
+  ageMonths: number;
+  interests: string[];
+  knownWords: string[];
+}
+
+---
+
+# TELA 3 — CONVERSA
+
+Essa é a tela principal.
+
+Mostrar:
+
+"Oi, {nome}!"
+
+"Vamos conversar?"
+
+Personagem Lumi grande no centro.
+
+Abaixo:
+
+waveform animada.
+
+Botão circular grande de microfone.
+
+Texto muda de acordo com estado:
+
+idle:
+"Conversar"
+
+connecting:
+"Preparando..."
+
+listening:
+"Estou ouvindo..."
+
+thinking:
+"Hmm..."
+
+speaking:
+Lumi está falando
+
+error:
+"Vamos tentar de novo"
+
+---
+
+# PERSONAGEM
+
+Usaremos posteriormente a arte oficial.
+
+Por enquanto criar um componente preparado para receber:
+
+/public/lumi/lumi.png
+
+Se o arquivo não existir, mostrar um placeholder elegante.
+
+O personagem deve reagir por CSS:
+
+idle:
+respiração muito sutil
+
+listening:
+leve inclinação/pulso
+
+thinking:
+estrela do peito pulsando
+
+speaking:
+leve movimento vertical
+
+Não tentar lip-sync nesta versão.
+
+---
+
+# MOTOR DE CONVERSA
+
+Criar um prompt de sistema dinamicamente usando:
+
+- nome
+- idade
+- interesses
+- palavras conhecidas
+
+O prompt deve instruir Lumi a:
+
+- falar português brasileiro;
+- usar frases muito curtas;
+- uma pergunta por vez;
+- dar espaço para resposta;
+- ser extremamente amigável;
+- incentivar sons e palavras;
+- expandir naturalmente o que a criança diz;
+- nunca repreender pronúncia;
+- nunca dizer "você errou";
+- usar assuntos concretos;
+- brincar com animais, objetos, comida e sons;
+- não fazer longas explicações.
+
+---
+
+# REGRA PEDAGÓGICA DE EXPANSÃO
+
+Exemplos:
+
+Criança:
+"bola"
+
+Lumi:
+"Bola grande!"
+
+---
+
+Criança:
+"água"
+
+Lumi:
+"Quer mais água?"
+
+---
+
+Criança:
+"cacholo"
+
+Lumi:
+"Cachorro! Au au!"
+
+Nunca responder:
+
+"Você pronunciou errado."
+
+---
+
+# REGRAS DE SEGURANÇA
+
+Lumi nunca deve pedir:
+
+- sobrenome;
+- endereço;
+- telefone;
+- escola;
+- localização;
+- foto;
+- documentos;
+- nome completo;
+- informações pessoais do responsável.
+
+Nunca incentivar segredos.
+
+Nunca dizer coisas como:
+
+"Não conte para sua mãe."
+
+Nunca se apresentar como substituto de:
+
+- mãe;
+- pai;
+- médico;
+- professor;
+- fonoaudiólogo.
+
+Se surgir tema inadequado:
+
+redirecionar para brincadeira infantil.
+
+Não armazenar gravações de áudio.
+
+---
+
+# GEMINI LIVE
+
+Implementar o Gemini de forma isolada dentro de:
+
+GeminiLiveProvider.ts
+
+Não espalhar chamadas Gemini pelos componentes React.
+
+As credenciais nunca podem ser hardcoded.
+
+Usar variável:
+
+GEMINI_API_KEY
+
+Criar:
+
+.env.example
+
+Nunca adicionar .env real ao git.
+
+Se a implementação segura de token efêmero não estiver disponível ou tiver mudado na API atual, consulte a documentação oficial antes de implementar.
+
+Não inventar endpoint ou formato de API.
+
+---
+
+# MODO MOCK
+
+Isso é obrigatório.
+
+Criar:
+
+NEXT_PUBLIC_VOICE_PROVIDER=mock
+
+ou:
+
+NEXT_PUBLIC_VOICE_PROVIDER=gemini
+
+Com `mock`, deve ser possível navegar por toda a experiência sem Gemini.
+
+No modo mock:
+
+usuário clica no microfone
+
+→ listening durante ~2 segundos
+
+→ thinking
+
+→ speaking
+
+→ reproduzir ou mostrar uma resposta simulada.
+
+Exemplo:
+
+"Oi! Eu sou o Lumi!"
+
+Isso permite desenvolver UI sem gastar API.
+
+---
+
+# TELA DOS PAIS
+
+Criar /pais.
+
+Não criar analytics real ainda.
+
+Mostrar dados fictícios claramente identificados como demonstração:
+
+Tempo conversando:
+4 min 12 s
+
+Tentativas de fala:
+17
+
+Palavras praticadas:
+bola
+grande
+cachorro
+
+Sugestão:
+
+"Experimente usar 'bola grande' durante uma brincadeira."
+
+---
+
+# RESPONSIVIDADE
+
+Prioridade:
+
+375px
+390px
+430px
+
+Também deve funcionar desktop para desenvolvimento.
+
+No desktop:
+
+centralizar uma moldura semelhante à largura de celular.
+
+---
+
+# ACESSIBILIDADE
+
+- botões grandes;
+- contraste adequado;
+- aria-label no microfone;
+- foco visível;
+- não depender somente de cor para indicar estados;
+- respeitar prefers-reduced-motion.
+
+---
+
+# QUALIDADE
+
+Executar antes de considerar concluído:
+
+npm run lint
+
+npm run build
+
+Corrigir todos os erros.
+
+Se existirem testes configurados:
+
+executar testes.
+
+---
+
+# README
+
+Criar README.md explicando:
+
+1. objetivo;
+2. arquitetura;
+3. instalação;
+4. variáveis de ambiente;
+5. modo mock;
+6. modo Gemini;
+7. como rodar;
+8. limitações atuais;
+9. próximos passos;
+10. aviso de que esta V0 ainda não é apropriada para coleta de áudio real de crianças.
+
+---
+
+# DEFINIÇÃO DE PRONTO
+
+A tarefa termina somente quando:
+
+- projeto inicia;
+- welcome funciona;
+- onboarding funciona;
+- perfil persiste localmente;
+- tela de conversa funciona;
+- modo mock funciona;
+- estados visuais funcionam;
+- arquitetura VoiceProvider existe;
+- Gemini fica encapsulado;
+- nenhuma chave aparece no frontend;
+- lint passa;
+- build passa;
+- README existe.
+
+Não implemente funcionalidades extras antes dessas.
+
+Ao final, apresente:
+
+1. arquivos criados;
+2. arquitetura;
+3. comandos executados;
+4. resultado de lint/build;
+5. problemas encontrados;
+6. próximos três passos recomendados.
